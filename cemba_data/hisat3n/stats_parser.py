@@ -45,8 +45,7 @@ def cell_parser_hisat_summary(stat_path):
 				report_dict[v] = 0
 
 		report_dict = pd.Series(report_dict).astype(int)
-		total_reads = report_dict[f'ReadPairsMappedInPE'] * 2 + report_dict[
-			'ReadsMappedInSE']
+		total_reads = report_dict[f'ReadPairsMappedInPE'] * 2
 		unique_mapped_reads = report_dict[f'PEUniqueMappedReadPairs'] * 2 + \
 							  report_dict[f'PEDiscordantlyUniqueMappedReadPairs'] * 2 + \
 							  report_dict[f'SEUniqueMappedReads']
