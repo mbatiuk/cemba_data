@@ -157,6 +157,12 @@ def snm3c_summary(outname="MappingSummary.csv.gz",indir="."):
 								indir=indir)
 	all_stats.append(df)
 
+	# uniquely mapped clusters
+	df = parse_single_stats_set(path_pattern=indir + '/bam/*.all_reads.name_sort.bam',
+								parser=cell_parser_unique_bam_clusters,
+								indir=indir)
+	all_stats.append(df)
+
 	# uniquely mapped reads dedup
 	df = parse_single_stats_set(path_pattern=indir+'/bam/*.all_reads.deduped.matrix.txt',
 								parser=cell_parser_picard_dedup_stat, prefix='UniqueAlign',
@@ -176,7 +182,12 @@ def snm3c_summary(outname="MappingSummary.csv.gz",indir="."):
 	# concatenate all stats
 	all_stats = pd.concat(all_stats, axis=1)
 	all_stats.index.name = 'cell'
+
 	if all_stats.shape[0] > 0:
+		# Calculate UniqueClusterMappingRate - overall mapping rate of unique read1 and read2
+		if 'UniqueMappedClusters' in all_stats.columns and 'TrimmedReadPairs' in all_stats.columns:
+			all_stats['UniqueClusterMappingRate'] = (all_stats['UniqueMappedClusters'].astype(float) /
+													 (all_stats['TrimmedReadPairs'].astype(float) + 0.00001) * 100).round(2)
 		all_stats.to_csv(outname)
 	else:
 		print(f'Nothing in {outname}')

@@ -6,8 +6,29 @@ import pathlib
 import os,sys
 import numpy as np
 import pandas as pd
+import pysam
 
 from .stats_col_names import COL_NAMES
+
+
+def cell_parser_unique_bam_clusters(stat_path):
+	"""
+	Count unique QNAMEs in a BAM file using pysam. Bam files contain unique mapped reads.
+	Unique QNAMEs represent unique mapped flowcell clusters (read pairs or singlet reads if other pair didn't map).
+	This can be later compared to input read pairs (input fowcell clusters) to derive mapping rate.
+	"""
+	cell_id = pathlib.Path(stat_path).name.split('.')[0]
+	if not os.path.exists(stat_path):
+		return pd.Series({'UniqueMappedClusters': 0}, name=cell_id)
+
+	unique_reads = set()
+	try:
+		with pysam.AlignmentFile(stat_path, "rb") as bam:
+			for read in bam:
+				unique_reads.add(read.query_name)
+	except Exception:
+		pass
+	return pd.Series({'UniqueMappedClusters': len(unique_reads)}, name=cell_id)
 
 
 def cell_parser_hisat_summary(stat_path):
