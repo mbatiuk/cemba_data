@@ -5,7 +5,7 @@
 #    
 #   Default value of OMP_NUM_THREADS is 1; be sure to change it!
 #
-#   Increase threads gradually while looking for optimal setting. Original suggestion was 48, here matched with Match with --cpus-per-task
+#   Increase threads gradually while looking for optimal setting. Original suggestion was 48, here matched with --cpus-per-task
 #  
 #
 #----------------------------------------------------
