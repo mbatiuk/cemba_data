@@ -542,5 +542,5 @@ dependencies:
     - url-normalize==1.4.3
     - validators==0.23.2
     - zlib-ng==0.4.1
-    - git+https://github.com/DingWB/cemba_data
+    - git+https://github.com/mbatiuk/cemba_data
     - git+https://github.com/DingWB/ALLCools
