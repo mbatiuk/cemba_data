@@ -3,9 +3,9 @@
 #
 #   Copy/edit this script as desired.  Launch script with sbatch on a login node.
 #    
-#   Default value of OMP_NUM_THREADS is 1; be sure to change it! Match with --cpus-per-task
+#   Default value of OMP_NUM_THREADS is 1; be sure to change it!
 #
-#   Increase thread count gradually while looking for optimal setting.
+#   Increase threads gradually while looking for optimal setting. Original suggestion was 48, here matched with Match with --cpus-per-task
 #  
 #
 #----------------------------------------------------
@@ -43,7 +43,7 @@ source $HOME/mambaforge/etc/profile.d/conda.sh
 conda activate yap
 
 
-# Set thread count (default value is 1)... Match this with --cpus-per-task value in the header
+# Set thread count (default value is 1)...
 export OMP_NUM_THREADS=62
 
 
