@@ -6,20 +6,20 @@ conda config --add channels defaults
 conda config --add channels bioconda
 conda config --add channels conda-forge
 
-mamba env create -f https://raw.githubusercontent.com/DingWB/cemba_data/master/yap.yaml
+mamba env create -f https://raw.githubusercontent.com/mbatiuk/cemba_data/master/yap.yaml
 
 # if failed, try:
-# mamba env create -f https://raw.githubusercontent.com/DingWB/cemba_data/master/env_greedy.yaml
+# mamba env create -f https://raw.githubusercontent.com/mbatiuk/cemba_data/master/env_greedy.yaml
 conda activate yap
 
 # conda env export > env_greedy.yaml
 ```
 ## To install this latest version:
 ```shell
-pip install git+https://github.com/DingWB/cemba_data
+pip install git+https://github.com/mbatiuk/cemba_data
 
 # reinstall
-pip uninstall -y cemba_data && pip install git+https://github.com/DingWB/cemba_data
+pip uninstall -y cemba_data && pip install git+https://github.com/mbatiuk/cemba_data
 
 ```
 

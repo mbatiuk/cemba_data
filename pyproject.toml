@@ -24,6 +24,7 @@ write_to = 'cemba_data/_version.py'
 #license = {file = "LICENSE"}
 #
 #[project.urls]
-#"Homepage" = "https://github.com/DingWB/cemba_data"
-#repository = "https://github.com/lhqing/cemba_data"
+#"Homepage" = "https://github.com/mbatiuk/cemba_data"
+#original repository = "https://github.com/lhqing/cemba_data"
+#original repository = "https://github.com/DingWB/cemba_data"
 #documentation = "https://hq-1.gitbook.io/mc/"
