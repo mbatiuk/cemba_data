@@ -70,9 +70,9 @@ rule hisat_3n_pair_end_mapping_dna_mode:
     shell: # # do not filter any reads in this step
         """
         mkdir -p {bam_dir}
-        hisat-3n {config[hisat3n_dna_reference]} -q  -1 {input.R1} -2 {input.R2} \
+        hisat-3n -x {config[hisat3n_dna_reference]} -q -1 {input.R1} -2 {input.R2} \
 --directional-mapping-reverse --base-change C,T {repeat_index_flag} \
---no-spliced-alignment --no-temp-splicesite -t  --new-summary \
+--no-spliced-alignment --no-temp-splicesite -t --new-summary \
 --summary-file {output.stats} --threads {threads} | samtools view -b -q 0 -o {output.bam}
         """
 
@@ -134,7 +134,7 @@ rule hisat_3n_single_end_mapping_dna_mode:
     #         "fastq/{cell_id}-{read_type}.hisat_3n_single_end_mapping_dna_mode.benchmark.txt"
     shell:
         """
-        hisat-3n {config[hisat3n_dna_reference]} -q -U {input.fastq} \
+        hisat-3n -x {config[hisat3n_dna_reference]} -q -U {input.fastq} \
 {params.direction} --base-change C,T {repeat_index_flag} \
 --no-spliced-alignment --no-temp-splicesite -t --new-summary --summary-file {output.stats} \
 --threads {threads} | samtools view -b -q 10 -o {output.bam}
