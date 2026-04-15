@@ -377,7 +377,7 @@ yap qsub \
 	print('#' * 60 + '\n')
 	return
 
-def prepare_sbatch(name, snakemake_dir, queue,total_memory_gb=None):
+def prepare_sbatch(name, snakemake_dir, queue, total_memory_gb=None, cores_per_job=None):
 	input_total_mem_mb = total_memory_gb * 1024 if not total_memory_gb is None else None
 	output_dir = snakemake_dir.parent
 	output_dir_name = output_dir.name
@@ -385,7 +385,7 @@ def prepare_sbatch(name, snakemake_dir, queue,total_memory_gb=None):
 	mode = get_configuration(output_dir / 'mapping_config.ini')['mode']
 
 	if queue == 'skx-normal':
-		sbatch_cores_per_job = 96
+		sbatch_cores_per_job = cores_per_job if cores_per_job is not None else 96
 		if mode.split('-')[0] == 'm3c':
 			time_str = "48:00:00"
 			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 204800
@@ -401,7 +401,7 @@ def prepare_sbatch(name, snakemake_dir, queue,total_memory_gb=None):
 		else:
 			raise KeyError(f'Unknown mode {mode}')
 	elif queue == 'normal':
-		sbatch_cores_per_job = 64
+		sbatch_cores_per_job = cores_per_job if cores_per_job is not None else 64
 		if mode.split('-')[0] == 'm3c':
 			time_str = "48:00:00"
 			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 64*2*1024
@@ -417,7 +417,7 @@ def prepare_sbatch(name, snakemake_dir, queue,total_memory_gb=None):
 		else:
 			raise KeyError(f'Unknown mode {mode}')
 	else: # queue == 'shared':
-		sbatch_cores_per_job = 64
+		sbatch_cores_per_job = cores_per_job if cores_per_job is not None else 64
 		if mode.split('-')[0] == 'm3c':
 			time_str = "48:00:00"
 			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 64*2*1024
@@ -500,9 +500,9 @@ def prepare_run(output_dir, total_jobs=12, cores_per_job=10, total_memory_gb=Non
 					cores_per_job=cores_per_job,
 					total_memory_gb=total_memory_gb,
 				 fastq_server=fastq_server)
-	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, queue='normal',total_memory_gb=total_memory_gb)
-	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, queue='skx-normal',total_memory_gb=total_memory_gb)
-	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, queue='shared',total_memory_gb=total_memory_gb)
+	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, queue='normal', total_memory_gb=total_memory_gb, cores_per_job=cores_per_job)
+	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, queue='skx-normal', total_memory_gb=total_memory_gb, cores_per_job=cores_per_job)
+	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, queue='shared', total_memory_gb=total_memory_gb, cores_per_job=cores_per_job)
 	# else:
 	#     script_path = write_qsub_commands(output_dir, cores_per_job, memory_gb_per_core, script_dir=snakemake_dir)
 	#     print(f"All snakemake commands need to be executed were summarized in {script_path}")
