@@ -364,7 +364,7 @@ yap qsub \
 	with open(qsub_total_path, 'w') as f:
 		f.write(qsub_str)
 	print('#' * 60)
-	print(f"IF YOU USE QSUB ON GALE: ")
+	print(f"IF YOU USE QSUB: ")
 	print(f"All snakemake commands need to be executed "
 		  f"were included in {qsub_total_path}")
 	print(f"You just need to qsub this script to "
@@ -384,14 +384,10 @@ def prepare_sbatch(name, snakemake_dir, qos, total_memory_gb=None, cores_per_job
 	mode = get_configuration(output_dir / 'mapping_config.ini')['mode']
 
 	sbatch_cores_per_job = cores_per_job if cores_per_job is not None else 62
-	if qos == 'serial':
-		time_limit = '2-00:00:00'
-	elif qos == 'parallel':
-		time_limit = '48:00:00'
-	else:
-		time_limit = '2-00:00:00'
+	time_limit = '2-00:00:00'
 
 	total_mem_mb = input_total_mem_mb if input_total_mem_mb is not None else 400 * 1024
+	sbatch_mem = f'{total_mem_mb // 1024}G'
 
 	sbatch_dir = snakemake_dir / 'sbatch'
 	sbatch_dir.mkdir(exist_ok=True)
@@ -407,13 +403,14 @@ def prepare_sbatch(name, snakemake_dir, qos, total_memory_gb=None, cores_per_job
 				 f'--command_file_path {script_path} ' \
 				 f'--working_dir {outdir}/snakemake/sbatch ' \
 				 f'--time_str {time_limit} ' \
-				 f'--qos {qos}'
+				 f'--qos {qos} ' \
+				 f'--mem {sbatch_mem} ' \
+				 f'--cpus {sbatch_cores_per_job}'
 	sbatch_total_path = sbatch_dir / f'sbatch-{qos}-qos.sh'
 	with open(sbatch_total_path, 'w') as f:
 		f.write(sbatch_cmd)
-
-	print('#' * 40)
-	print(f'For running jobs on the {qos} QOS:')
+	print('#' * 60)
+	print(f'IF YOU USE SBATCH: ')
 	print(f"All snakemake commands need to be executed "
 		  f"were included in {sbatch_total_path}")
 	print(f"You just need to run this script to "
