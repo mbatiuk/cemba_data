@@ -177,11 +177,24 @@ def sbatch_register_subparser(subparser):
 	)
 
 	parser_req.add_argument(
-		"--queue",
+		"--qos",
 		type=str,
-		default='shared',
-		help="Queue partition of Anvil. "
-			 "See https://portal.tacc.utexas.edu/user-guides/stampede2#running-queues for more information."
+		default='serial',
+		help="QOS of Slurm. "
+	)
+
+	parser_req.add_argument(
+		"--mem",
+		type=str,
+		default='300G',
+		help="Memory limit for each job."
+	)
+
+	parser_req.add_argument(
+		"--cpus",
+		type=int,
+		default=62,
+		help="CPUs per task for each job."
 	)
 
 	parser_req.add_argument(
@@ -201,7 +214,7 @@ def sbatch_register_subparser(subparser):
 	parser_req.add_argument(
 		"--template",
 		type=str,
-		choices=['yap', 'schicluster'],
+		choices=['yap'],
 		default='yap',
 		help="Type of sbatch template to use."
 	)
@@ -212,7 +225,6 @@ def sbatch_register_subparser(subparser):
 		required=False,
 		default=None,
 		help="Max number of jobs for the same user (not for the same sbatch command). "
-			 "If not provided, will determine automatically based on stampede2 limits."
 	)
 
 	parser.add_argument(

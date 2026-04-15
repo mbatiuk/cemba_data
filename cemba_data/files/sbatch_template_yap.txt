@@ -3,7 +3,7 @@
 #
 #   Copy/edit this script as desired.  Launch script with sbatch on a login node.
 #    
-#   Default value of OMP_NUM_THREADS is 1; be sure to change it!
+#   
 #
 #   Increase threads gradually while looking for optimal setting. Original suggestion was 48, here matched with --cpus-per-task
 #  
@@ -13,9 +13,9 @@
 #SBATCH -J {job_name}                     # Job name
 #SBATCH -o {log_dir}/{job_name}.o%j       # Name of stdout output file
 #SBATCH -e {log_dir}/{job_name}.e%j       # Name of stderr error file
-#SBATCH --qos serial                      # Modify depending on HPC node type
-#SBATCH --mem 300G                        # Memory usage, originally was 100G, can be decreased from 300G
-#SBATCH --cpus-per-task 62                # Modify depending on the node type
+#SBATCH --qos {qos}                       # Modify depending on HPC node type
+#SBATCH --mem {mem}                       # Memory usage
+#SBATCH --cpus-per-task {cpus}            # Modify depending on the node type
 #SBATCH -N 1                              # Total # of nodes
 #SBATCH -n 1                              # Total # of mpi tasks
 #SBATCH -t {time_str}                     # Run time (hh:mm:ss)
@@ -44,7 +44,7 @@ conda activate yap
 
 
 # Set thread count (default value is 1)...
-export OMP_NUM_THREADS=62
+export OMP_NUM_THREADS={cpus}
 
 
 # Actual command

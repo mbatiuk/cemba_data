@@ -297,7 +297,7 @@ def write_gcp_skypolit_yaml(output_dir, template_path):
 		f_cmd.write(f"sky spot launch -n {name} -y "+str(yaml_path)+"\n")
 	f_cmd.close()
 
-def write_sbatch_commands(output_dir, cores_per_job, script_dir, total_mem_mb, queue):
+def write_sbatch_commands(output_dir, cores_per_job, script_dir, total_mem_mb, qos):
 	output_dir_name = output_dir.name
 	outdir=str(output_dir.absolute())
 	cmds = {}
@@ -313,7 +313,7 @@ def write_sbatch_commands(output_dir, cores_per_job, script_dir, total_mem_mb, q
 			  f'--rerun-incomplete ' \
 			  f'&& test -f "{outdir}/{snake_file.parent.name}/MappingSummary.csv.gz" && rm -rf {outdir}/{snake_file.parent.name}/.snakemake'
 		cmds[uid] = cmd
-	script_path = script_dir / f'snakemake_{queue}_cmd.txt'
+	script_path = script_dir / f'snakemake_{qos}_cmd.txt'
 	with open(script_path, 'w') as f:
 		try:
 			uid_order = pd.read_csv(
@@ -332,7 +332,7 @@ def write_sbatch_commands(output_dir, cores_per_job, script_dir, total_mem_mb, q
 			# uid_order file do not exist (when starting from cell FASTQs)
 			for cmd in cmds.values():
 				f.write(cmd + '\n')
-	return f'{outdir}/snakemake/sbatch/snakemake_{queue}_cmd.txt'
+	return f'{outdir}/snakemake/sbatch/snakemake_{qos}_cmd.txt'
 
 def prepare_qsub(name, snakemake_dir, total_jobs, cores_per_job, total_memory_gb,fastq_server):
 	memory_gb_per_core = int(total_memory_gb / cores_per_job) if not total_memory_gb is None else 2
@@ -371,69 +371,28 @@ yap qsub \
 		  f"map the whole library in {output_dir}")
 	print(f"You can also change the per job parameters in {script_path} "
 		  f"or change the global parameters in {qsub_total_path}")
-	print(f"Read 'yap qsub -h' if you want to have more options about sbatch. "
-		  f"Alternatively, you can sbatch the commands in {script_path} by yourself, "
+	print(f"Read 'yap qsub -h' if you want to have more options about qsub. "
+		  f"Alternatively, you can qsub the commands in {script_path} by yourself, "
 		  f"as long as they all get successfully executed.")
 	print('#' * 60 + '\n')
 	return
 
-def prepare_sbatch(name, snakemake_dir, queue, total_memory_gb=None, cores_per_job=None):
+def prepare_sbatch(name, snakemake_dir, qos, total_memory_gb=None, cores_per_job=None):
 	input_total_mem_mb = total_memory_gb * 1024 if not total_memory_gb is None else None
 	output_dir = snakemake_dir.parent
-	output_dir_name = output_dir.name
-	outdir=str(output_dir.absolute())
+	outdir = str(output_dir.absolute())
 	mode = get_configuration(output_dir / 'mapping_config.ini')['mode']
 
-	if queue == 'skx-normal':
-		sbatch_cores_per_job = cores_per_job if cores_per_job is not None else 96
-		if mode.split('-')[0] == 'm3c':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 204800
-		elif mode.split('-')[0] == '4m':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 204800
-		elif mode.split('-')[0] == 'mc':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 204800
-		elif mode.split('-')[0] == 'mct':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 204800
-		else:
-			raise KeyError(f'Unknown mode {mode}')
-	elif queue == 'normal':
-		sbatch_cores_per_job = cores_per_job if cores_per_job is not None else 64
-		if mode.split('-')[0] == 'm3c':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 64*2*1024
-		elif mode.split('-')[0] == '4m':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 64*2*1024
-		elif mode.split('-')[0] == 'mc':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 64*2*1024
-		elif mode.split('-')[0] == 'mct':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 64*2*1024
-		else:
-			raise KeyError(f'Unknown mode {mode}')
-	else: # queue == 'shared':
-		sbatch_cores_per_job = cores_per_job if cores_per_job is not None else 64
-		if mode.split('-')[0] == 'm3c':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 64*2*1024
-		elif mode.split('-')[0] == '4m':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 64*2*1024
-		elif mode.split('-')[0] == 'mc':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 64*2*1024
-		elif mode.split('-')[0] == 'mct':
-			time_str = "48:00:00"
-			total_mem_mb = input_total_mem_mb if not input_total_mem_mb is None else 64*2*1024
-		else:
-			raise KeyError(f'Unknown mode {mode}')
-	# else:
-	#     raise ValueError(f'Unknown queue {queue}')
+	sbatch_cores_per_job = cores_per_job if cores_per_job is not None else 62
+	if qos == 'serial':
+		time_limit = '2-00:00:00'
+	elif qos == 'parallel':
+		time_limit = '48:00:00'
+	else:
+		time_limit = '2-00:00:00'
+
+	total_mem_mb = input_total_mem_mb if input_total_mem_mb is not None else 400 * 1024
+
 	sbatch_dir = snakemake_dir / 'sbatch'
 	sbatch_dir.mkdir(exist_ok=True)
 
@@ -441,20 +400,20 @@ def prepare_sbatch(name, snakemake_dir, queue, total_memory_gb=None, cores_per_j
 										cores_per_job=sbatch_cores_per_job,
 										script_dir=sbatch_dir,
 										total_mem_mb=total_mem_mb,
-										queue=queue)
-	# the path here is using stampede path
+										qos=qos)
+
 	sbatch_cmd = f'yap sbatch ' \
 				 f'--project_name {name} ' \
 				 f'--command_file_path {script_path} ' \
 				 f'--working_dir {outdir}/snakemake/sbatch ' \
-				 f'--time_str {time_str} ' \
-				 f'--queue {queue}'
-	sbatch_total_path = sbatch_dir / f'sbatch-{queue}-queue.sh'
+				 f'--time_str {time_limit} ' \
+				 f'--qos {qos}'
+	sbatch_total_path = sbatch_dir / f'sbatch-{qos}-qos.sh'
 	with open(sbatch_total_path, 'w') as f:
 		f.write(sbatch_cmd)
 
 	print('#' * 40)
-	print(f'For running jobs on the STAMPEDE2 {queue} queue:')
+	print(f'For running jobs on the {qos} QOS:')
 	print(f"All snakemake commands need to be executed "
 		  f"were included in {sbatch_total_path}")
 	print(f"You just need to run this script to "
@@ -465,14 +424,14 @@ def prepare_sbatch(name, snakemake_dir, queue, total_memory_gb=None, cores_per_j
 		  f"the per job parameters in {script_path} "
 		  f"or change the global parameters in {sbatch_total_path}")
 	print(f"Read 'yap sbatch -h' if you want to have more options about sbatch. "
-		  f"Alternatively, you can sbatch the commands in "
-		  f"{outdir}/snakemake/sbatch/sbatch.sh by yourself, "
+		  f"Alternatively, you can submit the job scripts in "
+		  f"{outdir}/snakemake/sbatch/ by yourself, "
 		  f"as long as they all get successfully executed.")
 	print('#' * 40 + '\n')
 	return
 
 def prepare_run(output_dir, total_jobs=12, cores_per_job=10, total_memory_gb=None,
-				name=None,fastq_server='local'):
+				name=None, fastq_server='local', qos='serial'):
 	config = get_configuration(output_dir / 'mapping_config.ini')
 	mode = config['mode']
 	if mode.split('-')[0] in ['mc', 'm3c'] and cores_per_job < 4:
@@ -486,34 +445,20 @@ def prepare_run(output_dir, total_jobs=12, cores_per_job=10, total_memory_gb=Non
 	snakemake_dir = output_dir / 'snakemake'
 	snakemake_dir.mkdir(exist_ok=True)
 
-	# this is only some automatic code for ecker lab...
-	# so conditioned by the host name
-	try:
-		host_name = os.environ['HOSTNAME']
-	except KeyError:
-		host_name = subprocess.run('hostname', stdout=subprocess.PIPE, encoding='utf8').stdout
-		if not isinstance(host_name, str):
-			host_name = 'unknown'
 	prepare_qsub(name=name,
-					snakemake_dir=snakemake_dir,
-					total_jobs=total_jobs,
-					cores_per_job=cores_per_job,
-					total_memory_gb=total_memory_gb,
+				 snakemake_dir=snakemake_dir,
+				 total_jobs=total_jobs,
+				 cores_per_job=cores_per_job,
+				 total_memory_gb=total_memory_gb,
 				 fastq_server=fastq_server)
-	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, queue='normal', total_memory_gb=total_memory_gb, cores_per_job=cores_per_job)
-	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, queue='skx-normal', total_memory_gb=total_memory_gb, cores_per_job=cores_per_job)
-	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, queue='shared', total_memory_gb=total_memory_gb, cores_per_job=cores_per_job)
-	# else:
-	#     script_path = write_qsub_commands(output_dir, cores_per_job, memory_gb_per_core, script_dir=snakemake_dir)
-	#     print(f"All snakemake commands need to be executed were summarized in {script_path}")
-	#     print(f"You need to execute them based on the computational environment you have "
-	#           f"(e.g., use a job scheduler or run locally).")
+	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, qos=qos, 
+				   total_memory_gb=total_memory_gb, cores_per_job=cores_per_job)
 
 	print(f"Once all commands are executed successfully, use 'yap summary' to generate final mapping summary.")
 	return
 
-def start_from_cell_fastq(output_dir, fastq_pattern, config_path,aligner='bismark',n_group=64,
-						  n_jobs=64,total_memory_gb=None):
+def start_from_cell_fastq(output_dir, fastq_pattern, config_path, aligner='bismark', n_group=64,
+						  n_jobs=64, total_memory_gb=None, qos='serial'):
 	output_dir = pathlib.Path(output_dir).absolute()
 	if output_dir.exists():
 		raise FileExistsError(f'Output dir {output_dir} already exist, please delete it or use another path.')
@@ -567,5 +512,5 @@ def start_from_cell_fastq(output_dir, fastq_pattern, config_path,aligner='bismar
 		make_snakefile_hisat3n(output_dir)
 	if total_memory_gb is None:
 		total_memory_gb = 2 * n_jobs
-	prepare_run(output_dir,cores_per_job=n_jobs,total_memory_gb=total_memory_gb)
+	prepare_run(output_dir, cores_per_job=n_jobs, total_memory_gb=total_memory_gb, qos=qos)
 	return

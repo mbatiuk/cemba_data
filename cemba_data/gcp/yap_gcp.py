@@ -293,7 +293,7 @@ def prepare_mapping(workd="gs://mapping_example/test_gcp",
 					region='us-west1',keep_remote=False,
 					fastq_server='gcp',gcp=True,
 					skypilot_template=None,job_name='mapping',
-					env_name='base',n_jobs=64):
+					env_name='base',n_jobs=64, qos='serial'):
 	"""
 		Prepare the skypilot yaml file to run demultiplex on GCP.
 
@@ -385,7 +385,7 @@ def prepare_mapping(workd="gs://mapping_example/test_gcp",
 		CMD = f'yap-gcp run_mapping --workd {workd} \
 --config_path "mapping_config.ini" --aligner {aligner} \
 --fastq_server {fastq_server} --gcp {gcp} --region {region} \
---keep_remote {keep_remote} --n_jobs {n_jobs} \
+--keep_remote {keep_remote} --n_jobs {n_jobs} --qos {qos} \
 --node_rank "$SKYPILOT_NODE_RANK"'
 		if not env_name is None:
 			CMD=f"conda activate {env_name} \n  "+ CMD
@@ -400,7 +400,7 @@ def prepare_mapping(workd="gs://mapping_example/test_gcp",
 			CMD = f'yap-gcp run_mapping --workd {workd} \
 --config_path "mapping_config.ini" --aligner {aligner} \
 --fastq_server {fastq_server} --gcp {gcp} --region {region} \
---keep_remote {keep_remote} --n_jobs {n_jobs} \
+--keep_remote {keep_remote} --n_jobs {n_jobs} --qos {qos} \
 --node_rank {rank}'
 			if not env_name is None:
 				CMD = f"conda activate {env_name} \n  " + CMD
@@ -422,7 +422,7 @@ def run_mapping(workd="gs://mapping_example/test_gcp",
 				config_path="mapping_config.ini",aligner='hisat-3n',
 				n_jobs=64,total_memory_gb=None,node_rank=0,
 				print_only=False,
-				snakemake_template=None):
+				snakemake_template=None, qos='serial'):
 	if fastq_server=='gcp': # write output to GCP bucket
 		output_folder=workd.replace("gs://","")
 	else: #local or ftp
@@ -480,7 +480,7 @@ def run_mapping(workd="gs://mapping_example/test_gcp",
 			total_memory_gb=2*n_jobs
 		prepare_run(output_dir=pathlib.Path(output_folder).absolute(),
 					cores_per_job=n_jobs,total_memory_gb=total_memory_gb,
-					fastq_server=fastq_server)
+					fastq_server=fastq_server, qos=qos)
 	else:
 		for cmd in cmds:
 			print(f"{cmd}")
@@ -503,7 +503,7 @@ def yap_pipeline(
 	mode='m3c',bismark_ref='~/Ref/hg38/hg38_ucsc_with_chrL.bismark1',
 	chrom_size_path='~/Ref/hg38_Broad/hg38.chrom.sizes',
 	aligner='hisat-3n',n_node=12,sky_env='sky',disk_size1=3072,
-	disk_size2=500):
+	disk_size2=500, qos='serial'):
 	if not demultiplex_template is None:
 		demultiplex_template=os.path.expanduser(demultiplex_template)
 	if not mapping_template is None:
@@ -528,7 +528,7 @@ def yap_pipeline(
 --tmp_dir mapping_gcp_tmp --n_node {n_node} --image {image} \
 --region {region} --keep_remote {keep_remote} --fastq_server {fastq_server} --gcp {gcp} \
 --skypilot_template {mapping_template} --job_name mapping \
---env_name {env_name} --n_jobs {n_jobs2} --disk_size {disk_size2}'
+--env_name {env_name} --n_jobs {n_jobs2} --disk_size {disk_size2} --qos {qos}'
 	print(cmd)
 	if not separated:
 		output = os.path.join('mapping_gcp_tmp', "run_mapping.yaml")

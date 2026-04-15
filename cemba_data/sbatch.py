@@ -1,7 +1,5 @@
 """
-A sbatch wrapper for stampede2
-See stampede2 doc:
-https://portal.tacc.utexas.edu/user-guides/stampede2#running-sbatch
+A sbatch wrapper
 """
 
 import pathlib
@@ -18,20 +16,8 @@ import cemba_data
 
 PACKAGE_DIR = pathlib.Path(cemba_data.__path__[0])
 
-# see stampede2 doc https://portal.tacc.utexas.edu/user-guides/stampede2#running-queues
 # name: max_jobs
-STAMPEDE2_QUEUES = {
-    'development': 1,
-    'normal': 50,
-    'large': 5,
-    'long': 2,
-    'flat-quadrant': 5,
-    'skx-dev': 1,
-    'skx-normal': 20,
-    'skx-large': 3,
-    'shared': 1000,
-    'wholenode': 1000
-}
+DEFAULT_MAX_JOBS = 1000
 
 
 def judge_job_success(job_id, retry=3):
@@ -128,7 +114,7 @@ def squeue_text():
     return squeue_result
 
 
-def squeue(partition):
+def squeue(qos=None):
     """
     check current running job
 
@@ -171,24 +157,28 @@ def squeue(partition):
     squeue_df = pd.DataFrame(records[1:],
                              columns=records[0]).set_index('JOBID')
     total_job = squeue_df.shape[0]
-    try:
-        squeue_df = squeue_df[squeue_df['PARTITION'].str.lower() == partition.lower()].copy()
-        return squeue_df, total_job
-    except KeyError:
-        print(squeue_df)
-        return squeue_df, total_job
+    if qos is not None:
+        try:
+            # try search both QOS and PARTITION columns
+            if 'QOS' in squeue_df.columns:
+                squeue_df = squeue_df[squeue_df['QOS'].str.lower() == qos.lower()].copy()
+            elif 'PARTITION' in squeue_df.columns:
+                squeue_df = squeue_df[squeue_df['PARTITION'].str.lower() == qos.lower()].copy()
+            else:
+                pass
+        except KeyError:
+            pass
+    return squeue_df, total_job
 
 
-def make_sbatch_script_files(commands, sbatch_dir, name_prefix, queue, time_str, email, email_type, template='yap'):
-    """See stampede2 doc: https://portal.tacc.utexas.edu/user-guides/stampede2#running-sbatch"""
+def make_sbatch_script_files(commands, sbatch_dir, name_prefix, qos, time_str, email, email_type, 
+                             template='yap', mem='300G', cpus=62):
+    """See Slurm doc: https://slurm.schedmd.com/sbatch.html"""
     if template == 'yap':
         with open(PACKAGE_DIR / 'files/sbatch_template_yap.txt') as f:
             sbatch_template = f.read()
-    elif template == 'schicluster':
-        with open(PACKAGE_DIR / 'files/sbatch_template_schicluster.txt') as f:
-            sbatch_template = f.read()
     else:
-        raise ValueError('Only support ["yap", "schicluster"] template')
+        raise ValueError('Only support "yap" template')
     sbatch_dir = pathlib.Path(sbatch_dir)
 
     if email is not None:
@@ -205,13 +195,15 @@ def make_sbatch_script_files(commands, sbatch_dir, name_prefix, queue, time_str,
         job_name = f'{name_prefix}_{i}'
         sbatch_script = sbatch_template.format(
             job_name=job_name,
-            queue=queue,
+            qos=qos,
             time_str=time_str,
             email_str=email_str,
             email_type_str=email_type_str,
             command=command,
             log_dir=sbatch_dir,
-            env_dir_random=env_dir_random
+            env_dir_random=env_dir_random,
+            mem=mem,
+            cpus=cpus
         )
         job_script_path = sbatch_dir / f'{job_name}.sh'
         with open(job_script_path, 'w') as f:
@@ -223,7 +215,7 @@ def make_sbatch_script_files(commands, sbatch_dir, name_prefix, queue, time_str,
 def sacct(jobs):
     sep_pattern = re.compile(r' +')
     sacct_cmd = f'sacct -j {",".join(jobs)} ' \
-                f'--format=jobid,jobname,partition,alloccpus,elapsed,state,exitcode'
+                f'--format=jobid,jobname,qos,alloccpus,elapsed,state,exitcode'
     sacct_result = subprocess.run(shlex.split(sacct_cmd),
                                   check=True,
                                   encoding='utf8',
@@ -256,9 +248,9 @@ def sacct(jobs):
     return sacct_data
 
 
-def sbatch_submitter(project_name, command_file_path, working_dir, time_str, queue='shared',
+def sbatch_submitter(project_name, command_file_path, working_dir, time_str, qos='serial',
                      email=None, email_type='fail', max_jobs=None, dry_run=False, retry=2,
-                     template='yap'):
+                     template='yap', mem='300G', cpus=62):
     # read commands
     with open(command_file_path) as f:
         # I always assume the command is ordered with descending priority.
@@ -268,19 +260,14 @@ def sbatch_submitter(project_name, command_file_path, working_dir, time_str, que
     # set name
     project_name = project_name.replace(' ', '_')
 
-    # check queue
-    queue = queue.lower()
-    if queue not in STAMPEDE2_QUEUES:
-        raise KeyError(f'queue name {queue} not found in STAMPEDE2_QUEUES, '
-                       f'available queues are {list(STAMPEDE2_QUEUES.keys())}')
+    # check qos
+    qos = qos.lower()
 
     # set max_jobs
-    _max_jobs = STAMPEDE2_QUEUES[queue]
     if max_jobs is None:
-        max_jobs = _max_jobs
-    else:
-        max_jobs = min(max_jobs, _max_jobs)
-    print(f'Max concurrent sbatch jobs {max_jobs}, stampede2 allows {STAMPEDE2_QUEUES[queue]}.')
+        max_jobs = DEFAULT_MAX_JOBS
+    
+    print(f'Max concurrent sbatch jobs {max_jobs}.')
 
     # make sbatch_dir
     sbatch_dir = pathlib.Path(working_dir) / f'{project_name}_sbatch'
@@ -303,11 +290,13 @@ def sbatch_submitter(project_name, command_file_path, working_dir, time_str, que
         commands=commands,
         sbatch_dir=sbatch_dir,
         name_prefix=project_name,
-        queue=queue,
+        qos=qos,
         time_str=time_str,
         email=email,
         email_type=email_type,
-        template=template
+        template=template,
+        mem=mem,
+        cpus=cpus
     )
 
     # prepare submission
@@ -332,7 +321,7 @@ def sbatch_submitter(project_name, command_file_path, working_dir, time_str, que
                 break
             # squeue and update running job status
             try:
-                squeue_df, total_job = squeue(partition=queue)
+                squeue_df, total_job = squeue(qos=qos)
                 squeue_fail = 0
             except Exception as e:
                 error_path = sbatch_dir / 'squeue_text.txt'

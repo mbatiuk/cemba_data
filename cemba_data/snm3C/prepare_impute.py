@@ -221,7 +221,7 @@ def prepare_impute_dir(output_dir,
         sbatch_str = f'yap sbatch --project_name {project_name} ' \
                      f'--command_file_path {remote_sbatch_dir}/snakemake_cmd.txt ' \
                      f'--working_dir {remote_sbatch_dir} --time_str {sbatch_time_str} ' \
-                     f'--template schicluster'
+                     f'--template yap'
         with open(local_sbatch_dir / 'sbatch.sh', 'w') as f:
             f.write(sbatch_str)
 
