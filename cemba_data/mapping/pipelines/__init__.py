@@ -311,7 +311,7 @@ def write_sbatch_commands(output_dir, cores_per_job, script_dir, total_mem_mb, q
 			  f'--default-resources mem_mb=100 --rerun-incomplete ' \
 			  f'--resources mem_mb={total_mem_mb} ' \
 			  f'--rerun-incomplete ' \
-			  f'&& test -f "{outdir}/{snake_file.parent.name}/MappingSummary.csv.gz && && rm -rf {outdir}/{snake_file.parent.name}/.snakemake"'
+			  f'&& test -f "{outdir}/{snake_file.parent.name}/MappingSummary.csv.gz" && rm -rf {outdir}/{snake_file.parent.name}/.snakemake'
 		cmds[uid] = cmd
 	script_path = script_dir / f'snakemake_{queue}_cmd.txt'
 	with open(script_path, 'w') as f:
