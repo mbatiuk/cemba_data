@@ -16,19 +16,49 @@ def cell_parser_unique_bam_clusters(stat_path):
 	Count unique QNAMEs in a BAM file using pysam. Bam files contain unique mapped reads.
 	Unique QNAMEs represent unique mapped flowcell clusters (read pairs or singlet reads if other pair didn't map).
 	This can be later compared to input read pairs (input fowcell clusters) to derive mapping rate.
+
+	For m3C hisat3n pipelines, split-and-collapsed reads have their R1/R2 flags cleared, 
+	but the 'ST' tag (S1, S2) preserves the read type information. 
+	Initial paired-end mapped reads still use standard BAM flags - read with pysam .is_read1 or .is_read2
 	"""
 	cell_id = pathlib.Path(stat_path).name.split('.')[0]
 	if not os.path.exists(stat_path):
-		return pd.Series({'UniqueMappedClusters': 0}, name=cell_id)
+		return pd.Series({
+			'UniqueMappedClusters': 0,
+			'UniqueMappedR1': 0,
+			'UniqueMappedR2': 0
+		}, name=cell_id)
 
-	unique_reads = set()
+	unique_clusters = set()
+	unique_r1 = set()
+	unique_r2 = set()
 	try:
 		with pysam.AlignmentFile(stat_path, "rb") as bam:
 			for read in bam:
-				unique_reads.add(read.query_name)
+				if read.is_unmapped:
+					continue
+				qname = read.query_name
+				unique_clusters.add(qname)
+
+				# 1. Check ST tag (split/collapsed reads)
+				if read.has_tag('ST'):
+					st = read.get_tag('ST')  # e.g., 'S1', 'S2' - split Read 1  or Read 2 in m3C run
+					if st[1] == '1':
+						unique_r1.add(qname)
+					elif st[1] == '2':
+						unique_r2.add(qname)
+				# 2. Check flags (initial paired reads)
+				elif read.is_read1:
+					unique_r1.add(qname)
+				elif read.is_read2:
+					unique_r2.add(qname)
 	except Exception:
 		pass
-	return pd.Series({'UniqueMappedClusters': len(unique_reads)}, name=cell_id)
+	return pd.Series({
+		'UniqueMappedClusters': len(unique_clusters),
+		'UniqueMappedR1': len(unique_r1),
+		'UniqueMappedR2': len(unique_r2)
+	}, name=cell_id)
 
 
 def cell_parser_hisat_summary(stat_path):

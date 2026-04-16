@@ -185,9 +185,16 @@ def snm3c_summary(outname="MappingSummary.csv.gz",indir="."):
 
 	if all_stats.shape[0] > 0:
 		# Calculate UniqueClusterMappingRate - overall mapping rate of unique read1 and read2
+		# Also calculate Read1 and Read2 mapping rate as derived from parsing bam files
 		if 'UniqueMappedClusters' in all_stats.columns and 'TrimmedReadPairs' in all_stats.columns:
 			all_stats['UniqueClusterMappingRate'] = (all_stats['UniqueMappedClusters'].astype(float) /
 													 (all_stats['TrimmedReadPairs'].astype(float) + 0.00001) * 100).round(2)
+		if 'UniqueMappedR1' in all_stats.columns and 'TrimmedReadPairs' in all_stats.columns:
+			all_stats['UniqueMappedR1Rate'] = (all_stats['UniqueMappedR1'].astype(float) /
+											  (all_stats['TrimmedReadPairs'].astype(float) + 0.00001) * 100).round(2)
+		if 'UniqueMappedR2' in all_stats.columns and 'TrimmedReadPairs' in all_stats.columns:
+			all_stats['UniqueMappedR2Rate'] = (all_stats['UniqueMappedR2'].astype(float) /
+											  (all_stats['TrimmedReadPairs'].astype(float) + 0.00001) * 100).round(2)
 		all_stats.to_csv(outname)
 	else:
 		print(f'Nothing in {outname}')

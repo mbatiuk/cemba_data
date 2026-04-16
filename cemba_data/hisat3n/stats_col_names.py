@@ -18,6 +18,8 @@ COL_NAMES = {
 	('cell_parser_cutadapt_trim_stats', 'qualtrim2_bp'): 'R2QualTrimBP',
 	('cell_parser_cutadapt_trim_stats', 'out2_bp'): 'R2TrimmedReadsBP',
 	('cell_parser_unique_bam_clusters', 'UniqueMappedClusters'): '',
+	('cell_parser_unique_bam_clusters', 'UniqueMappedR1'): '',
+	('cell_parser_unique_bam_clusters', 'UniqueMappedR2'): '',
 	('cell_parser_hisat_summary', 'ReadPairsMappedInPE'): 'DELETE',
 	('cell_parser_hisat_summary', 'PEUnmappableReadPairs'): 'DELETE',
 	('cell_parser_hisat_summary', 'PEUniqueMappedReadPairs'): 'DELETE',
