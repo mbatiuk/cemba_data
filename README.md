@@ -23,6 +23,38 @@ pip uninstall -y cemba_data && pip install git+https://github.com/mbatiuk/cemba_
 
 ```
 
+## HISAT-3N Installation
+HISAT-3N is not available via conda and can be downloaded as pre-built binaries from the [HISAT2 website](http://daehwankimlab.github.io/hisat2/download/) (check for HISAT-3N specific releases) or built from source:
+```shell
+git clone https://github.com/DaehwanKimLab/hisat2.git hisat-3n
+cd hisat-3n
+git checkout hisat3n
+make
+
+# Temporary add the hisat-3n directory to your PATH
+export PATH=$PWD:$PATH
+
+# Permanently add hisat-3n to your PATH, depending on your shell either bash or zsh:
+echo 'export PATH=$PWD:$PATH' >> ~/.bashrc
+source ~/.bashrc
+
+echo 'export PATH=$PWD:$PATH' >> ~/.zshrc 
+source ~/.zshrc
+```
+
+## Build hisat-3n index
+```bash
+# non-repeat index
+hisat-3n-build --base-change C,T genome.fa genome
+# repeat index
+hisat-3n-build --base-change T,C --repeat-index genome.fa genome
+# Build the repeat HISAT-3N integrated index with splice site information
+hisat-3n-build --base-change C,T --repeat-index --ss genome.ss --exon genome.exon genome.fa genome 
+
+# Build index for RNA
+hisat2-build -p 16 genome.fa genome
+```
+
 # Documentation
 ## Make sure create the right environment
 
