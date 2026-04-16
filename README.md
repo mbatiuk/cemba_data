@@ -59,7 +59,7 @@ yap demultiplex --fastq_pattern "Pool_Remind1_m3c/*.fastq.gz" -o mapping/Pool_Re
 sh mapping/snakemake/qsub/snakemake_cmd.txt # old yap pipeline
 
 # or new yap-gcp pipeline
-yap-gcp run_mapping --workd="celllevel" --gcp=False --config_path="m3c_config.ini" --aligner='hisat-3n' --n_jobs=62 --total_memory_gb=400 --qos="serial" --conda_base="mamba" --print_only=True
+yap-gcp run_mapping --workd="your_cell_level_directory" --gcp=False --config_path="m3c_config.ini" --aligner='hisat-3n' --n_jobs=62 --total_memory_gb=400 --qos="serial" --conda_base="mamba" --print_only=True
 #--n_jobs - amount of parallel jobs and requested cpu cores if run using sbatch
 #--qos - QOS option passed to sbatch script if run on HPC. This is HPC dependent
 #--conda_base - type of conda installation if run using sbatch
