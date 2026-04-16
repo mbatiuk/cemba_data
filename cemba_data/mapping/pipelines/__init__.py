@@ -405,7 +405,7 @@ def prepare_sbatch(name, snakemake_dir, qos, total_memory_gb=None, cores_per_job
 				 f'--qos {qos} ' \
 				 f'--mem {sbatch_mem} ' \
 				 f'--cpus {sbatch_cores_per_job} ' \
-				 f'--conda_base {conda_base}'
+				 f'--conda_base "{conda_base}"'
 	sbatch_total_path = sbatch_dir / f'sbatch-{qos}-qos.sh'
 	with open(sbatch_total_path, 'w') as f:
 		f.write(sbatch_cmd)
