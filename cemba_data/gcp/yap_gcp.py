@@ -422,7 +422,7 @@ def run_mapping(workd="gs://mapping_example/test_gcp",
 				config_path="mapping_config.ini",aligner='hisat-3n',
 				n_jobs=64,total_memory_gb=None,node_rank=0,
 				print_only=False,
-				snakemake_template=None, qos='serial'):
+				snakemake_template=None, qos='serial', conda_base='mamba'):
 	if fastq_server=='gcp': # write output to GCP bucket
 		output_folder=workd.replace("gs://","")
 	else: #local or ftp
@@ -480,7 +480,7 @@ def run_mapping(workd="gs://mapping_example/test_gcp",
 			total_memory_gb=2*n_jobs
 		prepare_run(output_dir=pathlib.Path(output_folder).absolute(),
 					cores_per_job=n_jobs,total_memory_gb=total_memory_gb,
-					fastq_server=fastq_server, qos=qos)
+					fastq_server=fastq_server, qos=qos, conda_base=conda_base)
 	else:
 		for cmd in cmds:
 			print(f"{cmd}")

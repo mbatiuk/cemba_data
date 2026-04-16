@@ -7,6 +7,7 @@ import re
 import shlex
 import subprocess
 import time
+import os
 from collections import defaultdict
 import pandas as pd
 import random
@@ -172,7 +173,7 @@ def squeue(qos=None):
 
 
 def make_sbatch_script_files(commands, sbatch_dir, name_prefix, qos, time_str, email, email_type, 
-                             template='yap', mem='300G', cpus=62):
+                             template='yap', mem='300G', cpus=62, conda_base='mamba'):
     """See Slurm doc: https://slurm.schedmd.com/sbatch.html"""
     if template == 'yap':
         with open(PACKAGE_DIR / 'files/sbatch_template_yap.txt') as f:
@@ -188,6 +189,33 @@ def make_sbatch_script_files(commands, sbatch_dir, name_prefix, qos, time_str, e
         email_str = ''
         email_type_str = ''
 
+    # handle conda_base expansion
+    if conda_base.startswith("module "):
+        # e.g., "module mamba" -> "module load mamba"
+        module_name = conda_base.split(" ", 1)[1]
+        env_setup = f"module load {module_name}"
+    else:
+        # Mapping for standard installations
+        mapping = {
+            "mamba": "$HOME/mambaforge/etc/profile.d/conda.sh",
+            "mambaforge": "$HOME/mambaforge/etc/profile.d/conda.sh",
+            "conda": "$HOME/miniconda3/etc/profile.d/conda.sh",
+            "miniconda": "$HOME/miniconda3/etc/profile.d/conda.sh",
+            "anaconda": "$HOME/anaconda3/etc/profile.d/conda.sh",
+            "miniforge": "$HOME/miniforge3/etc/profile.d/conda.sh",
+            "miniforge3": "$HOME/miniforge3/etc/profile.d/conda.sh"
+        }
+        # If conda_base is in mapping, use path; otherwise use it as a custom path
+        path = mapping.get(conda_base.lower(), conda_base)
+
+        # expand path to check existence
+        expanded_path = os.path.expandvars(os.path.expanduser(path))
+        if not os.path.exists(expanded_path):
+            print(f"WARNING: Conda profile script not found at {expanded_path}. "
+                  "The sbatch job may fail if this path is also invalid on compute nodes.")
+
+        env_setup = f"source {path}"
+
     env_dir_random = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
     queue_job_path_list = []
@@ -199,6 +227,7 @@ def make_sbatch_script_files(commands, sbatch_dir, name_prefix, qos, time_str, e
             time_str=time_str,
             email_str=email_str,
             email_type_str=email_type_str,
+            env_setup=env_setup,
             command=command,
             log_dir=sbatch_dir,
             env_dir_random=env_dir_random,
@@ -250,7 +279,7 @@ def sacct(jobs):
 
 def sbatch_submitter(project_name, command_file_path, working_dir, time_str, qos='serial',
                      email=None, email_type='fail', max_jobs=None, dry_run=False, retry=2,
-                     template='yap', mem='300G', cpus=62):
+                     template='yap', mem='300G', cpus=62, conda_base='mamba'):
     # read commands
     with open(command_file_path) as f:
         # I always assume the command is ordered with descending priority.
@@ -296,7 +325,8 @@ def sbatch_submitter(project_name, command_file_path, working_dir, time_str, qos
         email_type=email_type,
         template=template,
         mem=mem,
-        cpus=cpus
+        cpus=cpus,
+        conda_base=conda_base
     )
 
     # prepare submission

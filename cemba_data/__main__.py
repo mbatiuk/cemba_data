@@ -219,6 +219,15 @@ def sbatch_register_subparser(subparser):
 		help="Type of sbatch template to use."
 	)
 
+	parser_req.add_argument(
+		"--conda_base",
+		type=str,
+		default='mamba',
+		help="Specify local conda installation type."
+		     "Accepted values are: 'mamba', 'mambaforge', 'conda', 'miniconda', 'anaconda', 'miniforge', 'miniforge3'"
+			 "If loaded as a module on HPC specify 'module <module_name>' to use for module load <module_name>"
+	)
+
 	parser.add_argument(
 		"--max_jobs",
 		type=int,

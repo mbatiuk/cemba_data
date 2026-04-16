@@ -36,11 +36,10 @@ pwd
 # Prepare environment
 module purge
 
-# Modify according to your conda installation type (conda, mamba, etc)
-source $HOME/mambaforge/etc/profile.d/conda.sh
+{env_setup} || {{ echo "Error: Failed to setup conda environment using: {env_setup}"; exit 1; }}
 
 # Activate conda yap mapping environment, making sure name is correct
-conda activate yap
+conda activate yap || {{ echo "Error: Failed to activate 'yap' environment"; exit 1; }}
 
 
 # Set thread count (default value is 1)...

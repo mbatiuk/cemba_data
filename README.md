@@ -57,8 +57,16 @@ yap demultiplex --fastq_pattern "Pool_Remind1_m3c/*.fastq.gz" -o mapping/Pool_Re
 ## Run mapping
 ```shell
 sh mapping/snakemake/qsub/snakemake_cmd.txt # old yap pipeline
+
 # or new yap-gcp pipeline
-yap-gcp run_mapping --workd="mapping/Pool_Remind1_m3c" --gcp=False --config_path="m3c_config.ini" --aligner='hisat-3n' --n_jobs=64 --print_only=True
+yap-gcp run_mapping --workd="celllevel" --gcp=False --config_path="m3c_config.ini" --aligner='hisat-3n' --n_jobs=62 --total_memory_gb=400 --qos="serial" --conda_base="mamba" --print_only=True
+#--n_jobs - amount of parallel jobs and requested cpu cores if run using sbatch
+#--qos - QOS option passed to sbatch script if run on HPC. This is HPC dependent
+#--conda_base - type of conda installation if run using sbatch
+# Accepted values are "mamba", "mambaforge", "conda", "miniconda", "anaconda", "miniforge", "miniforge3"
+# If loaded as a module on HPC specify "module <module_name>", e.g. "module mamba"
+# You can also provide custom path to your conda installation e.g. "/custom/path/to/conda.sh"
+
 # or bismark
 yap-gcp run_mapping --workd="mapping" --gcp=False --config_path="m3c_config.ini" --aligner='bismark' --n_jobs=64 --print_only=True
 sh mapping/snakemake/qsub/snakemake_cmd.txt
