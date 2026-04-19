@@ -17,7 +17,7 @@ rule summary:
         expand("bam/{cell_id}.hisat3n_dna_summary.txt", cell_id=CELL_IDS),
         expand("bam/{cell_id}.hisat3n_dna.unique_align.deduped.matrix.txt",cell_id=CELL_IDS),
         expand("bam/{cell_id}.hisat3n_dna.unique_align.deduped.dna_reads.reads_mch_frac.csv",
-                        cell_id=CELL_IDS), # local(expand("bam/{cell_id}.*", cell_id=CELL_IDS)),
+                        cell_id=CELL_IDS), # expand("bam/{cell_id}.*", cell_id=CELL_IDS),
         expand("bam/{cell_id}.hisat3n_dna.unique_align.deduped.dna_reads.bam.bai",
                     cell_id=CELL_IDS),
 
@@ -43,7 +43,7 @@ rule summary:
         shell(config['post_mapping_script'])
 
         # generate the final summary
-        indir='.' if not config["gcp"] else workflow.default_remote_prefix
+        indir='.'
         aggregate_feature_counts(indir=indir)
         snmct_summary(outname=output.csv,indir=indir)
 
@@ -63,11 +63,11 @@ use rule sort_fq,unique_reads_cgn_extraction from hisat3n
 rule trim:
     input:
         # change to sort_R1 and sort_R2 output if the FASTQ name is disordered
-        R1=local("fastq/{cell_id}-R1_sort.fq"),
-        R2=local("fastq/{cell_id}-R2_sort.fq")
+        R1="fastq/{cell_id}-R1_sort.fq",
+        R2="fastq/{cell_id}-R2_sort.fq"
     output:
-        R1=local(temp("fastq/{cell_id}-R1.trimmed.fq.gz")),
-        R2=local(temp("fastq/{cell_id}-R2.trimmed.fq.gz")),
+        R1=temp("fastq/{cell_id}-R1.trimmed.fq.gz"),
+        R2=temp("fastq/{cell_id}-R2.trimmed.fq.gz"),
         stats="fastq/{cell_id}.trimmed.stats.txt"
     threads:
         1
@@ -95,10 +95,10 @@ rule trim:
 
 rule hisat_3n_pair_end_mapping_dna_mode:
     input:
-        R1=local("fastq/{cell_id}-R1.trimmed.fq.gz"),
-        R2=local("fastq/{cell_id}-R2.trimmed.fq.gz")
+        R1="fastq/{cell_id}-R1.trimmed.fq.gz",
+        R2="fastq/{cell_id}-R2.trimmed.fq.gz"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam")),
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam"),
         stats="bam/{cell_id}.hisat3n_dna_summary.txt",
     threads:
         config['hisat3n_threads']
@@ -114,9 +114,9 @@ rule hisat_3n_pair_end_mapping_dna_mode:
 
 rule sort_dna_bam:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam"))
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam")
     resources:
         mem_mb=1000
     threads:
@@ -129,7 +129,7 @@ rule sort_dna_bam:
 # remove PCR duplicates
 rule dedup_unique_bam:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam"
     output:
         bam="bam/{cell_id}.hisat3n_dna.unique_align.deduped.bam",
         stats="bam/{cell_id}.hisat3n_dna.unique_align.deduped.matrix.txt"
@@ -167,10 +167,10 @@ rule select_unique_bam_dna_reads:
 # Paired-end Hisat3n mapping using RNA mode
 rule hisat2_pairend_mapping_rna_mode:
     input:
-        R1=local("fastq/{cell_id}-R1.trimmed.fq.gz"),
-        R2=local("fastq/{cell_id}-R2.trimmed.fq.gz")
+        R1="fastq/{cell_id}-R1.trimmed.fq.gz",
+        R2="fastq/{cell_id}-R2.trimmed.fq.gz"
     output:
-        bam= local(temp(bam_dir + "/{cell_id}.hisat3n_rna.unsort.bam")),
+        bam= temp(bam_dir + "/{cell_id}.hisat3n_rna.unsort.bam"),
         stats="bam/{cell_id}.hisat3n_rna_summary.txt",
     threads:
         config["hisat_threads"]
@@ -186,9 +186,9 @@ rule hisat2_pairend_mapping_rna_mode:
 
 rule sort_rna_bam:
     input:
-        bam=local(bam_dir + "/{cell_id}.hisat3n_rna.unsort.bam")
+        bam=bam_dir + "/{cell_id}.hisat3n_rna.unsort.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_rna.bam"))
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_rna.bam")
     resources:
         mem_mb=1000
     threads:
@@ -201,7 +201,7 @@ rule sort_rna_bam:
 # skip dedup step for RNA reads
 rule select_unique_bam_rna_reads:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_rna.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_rna.bam"
     output:
         bam="bam/{cell_id}.hisat3n_rna.unique_align.rna_reads.bam",
         stats="bam/{cell_id}.hisat3n_rna.unique_align.rna_reads.reads_mch_frac.csv"

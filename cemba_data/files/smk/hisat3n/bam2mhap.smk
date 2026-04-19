@@ -1,9 +1,8 @@
 import os,sys
 import glob
 
-gcp=config.get("gcp",False)
-bam_dir=os.path.abspath(workflow.default_remote_prefix+"/bam") if gcp else "bam"
-mhap_dir=os.path.abspath(workflow.default_remote_prefix+"/mhap") if gcp else "mhap"
+bam_dir="bam"
+mhap_dir="mhap"
 
 suffix=config.get("suffix",".hisat3n_dna.all_reads.name_sort.bam")
 CELL_IDS=[os.path.basename(infile).replace(suffix,'') for infile in glob.glob(f"{bam_dir}/*{suffix}")]
@@ -24,7 +23,7 @@ rule sort_bam_by_pos:
     input:
         bam="bam/{cell_id}.hisat3n_dna.all_reads.name_sort.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.pos_sort.bam"))
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.pos_sort.bam")
     resources:
         mem_mb=1000
     # benchmark:
@@ -39,9 +38,9 @@ rule sort_bam_by_pos:
 # remove PCR duplicates
 rule dedup:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.pos_sort.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.all_reads.pos_sort.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam")), #to keep this bam, change to: "bam/{cell_id}.hisat3n_dna.all_reads.deduped.bam",
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam"), #to keep this bam, change to: "bam/{cell_id}.hisat3n_dna.all_reads.deduped.bam",
         stats="bam/{cell_id}.hisat3n_dna.all_reads.deduped.matrix.txt"
     resources:
         mem_mb=3000
@@ -57,9 +56,9 @@ rule dedup:
 # index the bam file
 rule index_bam:
     input:
-        bam=local(bam_dir+"/{input_name}.bam")
+        bam=bam_dir+"/{input_name}.bam"
     output:
-        bai=local(temp(bam_dir+"/{input_name}.bam.bai"))
+        bai=temp(bam_dir+"/{input_name}.bam.bai")
     shell:
         """
         samtools index {input.bam}
@@ -68,8 +67,8 @@ rule index_bam:
 # Convert bam to mhap
 rule bam_to_mhap:
     input: #sorted bam
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam"),
-        bai=local(bam_dir + "/{cell_id}.hisat3n_dna.all_reads.deduped.bam.bai")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam",
+        bai=bam_dir + "/{cell_id}.hisat3n_dna.all_reads.deduped.bam.bai"
     output:
         mhap1="mhap/{cell_id}.CG.mhap.gz",
         tbi1="mhap/{cell_id}.CG.mhap.gz.tbi",

@@ -49,7 +49,7 @@ rule summary:
         shell(config['post_mapping_script'])
 
         # generate the final summary
-        indir='.' if not config["gcp"] else workflow.default_remote_prefix
+        indir='.'
         snm3c_summary(outname=output.csv,indir=indir)
 
         # cleanup
@@ -58,8 +58,8 @@ rule summary:
 # Convert bam to mhap
 rule bam_to_mhap:
     input: #sorted bam
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam"),
-        bai=local(bam_dir + "/{cell_id}.hisat3n_dna.all_reads.deduped.bam.bai")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam",
+        bai=bam_dir + "/{cell_id}.hisat3n_dna.all_reads.deduped.bam.bai"
     output:
         mhap1="mhap/{cell_id}.CG.mhap.gz",
         tbi1="mhap/{cell_id}.CG.mhap.gz.tbi",

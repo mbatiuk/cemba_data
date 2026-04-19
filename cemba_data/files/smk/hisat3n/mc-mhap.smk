@@ -35,7 +35,7 @@ rule summary:
         shell(config['post_mapping_script'])
 
         # generate the final summary
-        indir='.' if not config["gcp"] else workflow.default_remote_prefix
+        indir='.'
         snmc_summary(outname=output.csv,indir=indir)
 
         # cleanup
@@ -52,10 +52,10 @@ use rule sort_fq,trim,unique_reads_cgn_extraction from hisat3n as hisat3n_*
 
 rule hisat_3n_pair_end_mapping_dna_mode:
     input:
-        R1=local("fastq/{cell_id}-R1.trimmed.fq.gz"),
-        R2=local("fastq/{cell_id}-R2.trimmed.fq.gz")
+        R1="fastq/{cell_id}-R1.trimmed.fq.gz",
+        R2="fastq/{cell_id}-R2.trimmed.fq.gz"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam")),
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam"),
         stats="bam/{cell_id}.hisat3n_dna_summary.txt",
     threads:
         config['hisat3n_threads']
@@ -72,9 +72,9 @@ rule hisat_3n_pair_end_mapping_dna_mode:
 
 rule mc_sort_bam:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam"))
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam")
     resources:
         mem_mb=1000
     threads:
@@ -86,7 +86,7 @@ rule mc_sort_bam:
 
 rule mc_dedup_unique_bam:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam"
     output:
         bam="bam/{cell_id}.hisat3n_dna.unique_align.deduped.bam",
         stats="bam/{cell_id}.hisat3n_dna.unique_align.deduped.matrix.txt"

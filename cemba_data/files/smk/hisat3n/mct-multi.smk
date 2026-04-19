@@ -43,7 +43,7 @@ rule summary:
         shell(config['post_mapping_script'])
 
         # generate the final summary
-        indir='.' if not config["gcp"] else workflow.default_remote_prefix
+        indir='.'
         aggregate_feature_counts(indir=indir)
         snmct_summary(outname=output.csv,indir=indir)
 
@@ -68,10 +68,10 @@ use rule * from mct exclude sort_dna_bam as mct_*
 
 rule hisat_3n_pair_end_mapping_dna_mode:
     input:
-        R1=local("fastq/{cell_id}-R1.trimmed.fq.gz"),
-        R2=local("fastq/{cell_id}-R2.trimmed.fq.gz")
+        R1="fastq/{cell_id}-R1.trimmed.fq.gz",
+        R2="fastq/{cell_id}-R2.trimmed.fq.gz"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam")),
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam"),
         stats="bam/{cell_id}.hisat3n_dna_summary.txt",
     threads:
         config['hisat3n_threads']
@@ -87,9 +87,9 @@ rule hisat_3n_pair_end_mapping_dna_mode:
 
 rule sort_dna_bam:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam"),
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam",
     output:
-        bam = local(temp(bam_dir + "/{cell_id}.hisat3n_dna.bam")),
+        bam = temp(bam_dir + "/{cell_id}.hisat3n_dna.bam"),
     resources:
         mem_mb=1000
     threads:
@@ -104,10 +104,10 @@ rule sort_dna_bam:
 # TODO right now, we are just using mapq == 1 as multi-align reads, but this might not be right
 rule split_unique_and_multi_align_bam_dna:
     input:
-        bam = local(bam_dir + "/{cell_id}.hisat3n_dna.bam"),
+        bam = bam_dir + "/{cell_id}.hisat3n_dna.bam",
     output:
-        unique=local(temp(bam_dir + "/{cell_id}.hisat3n_dna.unique_align.bam")),
-        multi=local(temp(bam_dir + "/{cell_id}.hisat3n_dna.multi_align.bam"))
+        unique=temp(bam_dir + "/{cell_id}.hisat3n_dna.unique_align.bam"),
+        multi=temp(bam_dir + "/{cell_id}.hisat3n_dna.multi_align.bam")
     run:
         separate_unique_and_multi_align_reads(
             in_bam_path=input.bam,
@@ -121,7 +121,7 @@ rule split_unique_and_multi_align_bam_dna:
 # remove PCR duplicates
 rule dedup_multi_bam:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.multi_align.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.multi_align.bam"
     output:
         bam="bam/{cell_id}.hisat3n_dna.multi_align.deduped.bam",
         stats="bam/{cell_id}.hisat3n_dna.multi_align.deduped.matrix.txt"

@@ -44,7 +44,7 @@ rule summary:
         shell(config['post_mapping_script'])
 
         # generate the final summary
-        indir = '.' if not config["gcp"] else workflow.default_remote_prefix
+        indir = '.'
         snm3c_summary(outname=output.csv,indir=indir)
 
         # cleanup
@@ -63,9 +63,9 @@ use rule * from hisat3n as hisat3n_*
 #=====================================================================
 rule sort_multi_bam:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.multi_aligned.bam"), #"bam/{cell_id}.hisat3n_dna.multi_aligned.bam"
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.multi_aligned.bam", #"bam/{cell_id}.hisat3n_dna.multi_aligned.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna_sorted.multi_align.bam"))
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna_sorted.multi_align.bam")
     resources:
         mem_mb=1000
     threads:
@@ -77,9 +77,9 @@ rule sort_multi_bam:
 
 rule dedup_multi_bam:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna_sorted.multi_align.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna_sorted.multi_align.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.multi_align.deduped.bam")), #"bam/{cell_id}.hisat3n_dna.multi_align.deduped.bam",
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.multi_align.deduped.bam"), #"bam/{cell_id}.hisat3n_dna.multi_align.deduped.bam",
         stats="bam/{cell_id}.hisat3n_dna.multi_align.deduped.matrix.txt"
     resources:
         mem_mb=4000
@@ -93,8 +93,8 @@ rule dedup_multi_bam:
 # generate ALLC
 rule multi_reads_allc:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.multi_align.deduped.bam"),
-        bai=local(bam_dir+"/{cell_id}.hisat3n_dna.multi_align.deduped.bam.bai")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.multi_align.deduped.bam",
+        bai=bam_dir+"/{cell_id}.hisat3n_dna.multi_align.deduped.bam.bai"
     output:
         allc="allc-multi/{cell_id}.allc_multi.tsv.gz",
         tbi="allc-multi/{cell_id}.allc_multi.tsv.gz.tbi",

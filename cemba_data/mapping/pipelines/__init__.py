@@ -90,7 +90,7 @@ def make_snakefile(output_dir,aligner="bismark"):
 									  snake_template=snake_template)
 	return
 
-def make_all_snakefile(output_dir, subdir=None, aligner="hisat-3n", gcp=True,
+def make_all_snakefile(output_dir, subdir=None, aligner="hisat-3n",
 					   snakemake_template=None, pattern="fastq/{cell_id}-R1.fq.gz"):
 	"""
 
@@ -99,7 +99,6 @@ def make_all_snakefile(output_dir, subdir=None, aligner="hisat-3n", gcp=True,
 	output_dir :
 	subdir :
 	aligner :
-	gcp :
 	snakemake_template :
 	pattern : str
 		used to get cell_ids
@@ -109,17 +108,7 @@ def make_all_snakefile(output_dir, subdir=None, aligner="hisat-3n", gcp=True,
 	-------
 
 	"""
-	if gcp:
-		from snakemake.remote.GS import RemoteProvider as GSRemoteProvider
-		import json
-		os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.expanduser(
-			'~/.config/gcloud/application_default_credentials.json')
-		with open(os.environ['GOOGLE_APPLICATION_CREDENTIALS'], 'r') as f:
-			D = json.load(f)
-		gcp_project = D['quota_project_id']
-		GS = GSRemoteProvider(project=gcp_project)
-	else:
-		from snakemake.io import glob_wildcards
+	from snakemake.io import glob_wildcards
 	# assert os.path.exists(os.path.join(output_dir,'mapping_config.ini'))
 	try:
 		mapping_config_name = [file for file in os.listdir(output_dir) if file.startswith('mapping_config.')][0]
@@ -166,9 +155,6 @@ def make_all_snakefile(output_dir, subdir=None, aligner="hisat-3n", gcp=True,
 		sub_folder=output_dir
 	if pattern=='CELL_IDS':
 		cell_ids=pd.read_csv(os.path.join(sub_folder,pattern),sep='\t',index_col=0).index.tolist()
-	elif gcp:
-		cell_ids = GS.glob_wildcards(os.path.join(sub_folder,pattern))[0]
-		#sub_folder can startwith gs://, if gs:// not present at the beginning, it is also OK
 	else:
 		cell_ids = glob_wildcards(os.path.join(sub_folder, pattern))[0]
 
@@ -232,13 +218,10 @@ def make_snakefile_hisat3n(output_dir,aligner='hisat-3n'):
 	return
 
 def write_qsub_commands(output_dir, cores_per_job, total_memory_gb=None,
-						script_dir=None,fastq_server='local'):
+						script_dir=None):
 	if total_memory_gb is None:
 		total_memory_gb=2*cores_per_job
-	if fastq_server!='local':
-		config_par=f"--config fastq_server='{fastq_server}' "
-	else:
-		config_par=''
+	config_par=''
 	cmds = {}
 	snake_files = list(output_dir.glob('*/Snakefile'))
 	for snake_file in snake_files:
@@ -267,35 +250,8 @@ def write_qsub_commands(output_dir, cores_per_job, total_memory_gb=None,
 				f.write(cmd + '\n')
 	return script_path
 
-def write_gcp_skypolit_yaml(output_dir, template_path):
-	output_dir=pathlib.Path(output_dir).absolute()
-	config = get_configuration(output_dir / 'mapping_config.ini')
-	try:
-		mode = config['mode']
-	except KeyError:
-		raise KeyError('mode not found in the config file.')
-	if template_path is None:
-		print("Using template: "+str(PACKAGE_DIR)+ f'/files/skypilot_template.yaml')
-		with open(PACKAGE_DIR / f'files/skypilot_template.yaml') as f:
-			template = f.read()
-	else:
-		with open(template_path) as f:
-			template = f.read()
-	sky_dir=output_dir/"snakemake/gcp"
-	sky_dir.mkdir(exist_ok=True, parents=True)
-	snake_files = list(output_dir.glob('*/Snakefile'))
-	f_cmd=open(sky_dir / "sky_spot.sh",'w')
-	for snake_file in snake_files:
-		uid = snake_file.parent.name
-		yaml_path = sky_dir / f"{uid}.yaml"
-		outdir=output_dir.name
-		workdir=str(output_dir)+f"/{uid}"
-		print(yaml_path)
-		name=uid.lower().replace('_','-')
-		with open(yaml_path,'w') as f:
-			f.write(template.format(name=name,uid=uid,workdir=workdir,outdir=outdir))
-		f_cmd.write(f"sky spot launch -n {name} -y "+str(yaml_path)+"\n")
-	f_cmd.close()
+
+
 
 def write_sbatch_commands(output_dir, cores_per_job, script_dir, total_mem_mb, qos):
 	output_dir_name = output_dir.name
@@ -333,13 +289,13 @@ def write_sbatch_commands(output_dir, cores_per_job, script_dir, total_mem_mb, q
 				f.write(cmd + '\n')
 	return f'{outdir}/snakemake/sbatch/snakemake_{qos}_cmd.txt'
 
-def prepare_qsub(name, snakemake_dir, total_jobs, cores_per_job, total_memory_gb,fastq_server):
+def prepare_qsub(name, snakemake_dir, total_jobs, cores_per_job, total_memory_gb):
 	memory_gb_per_core = int(total_memory_gb / cores_per_job) if not total_memory_gb is None else 2
 	output_dir = snakemake_dir.parent
 	qsub_dir = snakemake_dir / 'qsub'
 	qsub_dir.mkdir(exist_ok=True)
 	script_path = write_qsub_commands(output_dir, cores_per_job, total_memory_gb,
-									  script_dir=qsub_dir,fastq_server=fastq_server)
+									  script_dir=qsub_dir)
 	qsub_str = f"""
 #!/bin/bash
 #$ -N yap{name}
@@ -428,7 +384,7 @@ def prepare_sbatch(name, snakemake_dir, qos, total_memory_gb=None, cores_per_job
 	return
 
 def prepare_run(output_dir, total_jobs=12, cores_per_job=10, total_memory_gb=None,
-				name=None, fastq_server='local', qos='serial', conda_base='mamba'):
+				name=None, qos='serial', conda_base='mamba'):
 	config = get_configuration(output_dir / 'mapping_config.ini')
 	mode = config['mode']
 	if mode.split('-')[0] in ['mc', 'm3c'] and cores_per_job < 4:
@@ -446,8 +402,7 @@ def prepare_run(output_dir, total_jobs=12, cores_per_job=10, total_memory_gb=Non
 				 snakemake_dir=snakemake_dir,
 				 total_jobs=total_jobs,
 				 cores_per_job=cores_per_job,
-				 total_memory_gb=total_memory_gb,
-				 fastq_server=fastq_server)
+				 total_memory_gb=total_memory_gb)
 	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, qos=qos, 
 				   total_memory_gb=total_memory_gb, cores_per_job=cores_per_job,
 				   conda_base=conda_base)

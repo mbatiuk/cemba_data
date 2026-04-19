@@ -7,7 +7,6 @@ include:
 # ==================================================
 # FASTQ Trimming
 # ==================================================
-# print(config)
 
 # Trim reads
 # sort the fastq files so that R1 and R2 are in the same order
@@ -15,7 +14,7 @@ rule sort_fq:
     input:
         fq=get_fastq_path(),
     output:
-        fq=local(temp("fastq/{cell_id}-{read_type}_sort.fq")),
+        fq=temp("fastq/{cell_id}-{read_type}_sort.fq"),
     threads:
         1.5
     resources:
@@ -26,12 +25,11 @@ rule sort_fq:
 
 rule trim:
     input:
-        # change to R1_sort and R2_sort output if the FASTQ name is disordered
-        R1=local("fastq/{cell_id}-R1_sort.fq"),  #if local_fastq else GS.remote("gs://"+workflow.default_remote_prefix+"/fastq/{cell_id}-R1.fq.gz"),
-        R2=local("fastq/{cell_id}-R2_sort.fq")  #if local_fastq else GS.remote("gs://"+workflow.default_remote_prefix+"/fastq/{cell_id}-R2.fq.gz")
+        R1="fastq/{cell_id}-R1_sort.fq",
+        R2="fastq/{cell_id}-R2_sort.fq"
     output:
-        R1=local(temp("fastq/{cell_id}-R1.trimmed.fq.gz")),
-        R2=local(temp("fastq/{cell_id}-R2.trimmed.fq.gz")),
+        R1=temp("fastq/{cell_id}-R1.trimmed.fq.gz"),
+        R2=temp("fastq/{cell_id}-R2.trimmed.fq.gz"),
         stats="fastq/{cell_id}.trimmed.stats.txt"
     resources:
         mem_mb=200
@@ -56,18 +54,16 @@ rule trim:
 # Paired-end Hisat3n mapping using DNA mode
 rule hisat_3n_pair_end_mapping_dna_mode:
     input:
-        R1=local("fastq/{cell_id}-R1.trimmed.fq.gz"),
-        R2=local("fastq/{cell_id}-R2.trimmed.fq.gz")
+        R1="fastq/{cell_id}-R1.trimmed.fq.gz",
+        R2="fastq/{cell_id}-R2.trimmed.fq.gz"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam")),
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam"),
         stats="bam/{cell_id}.hisat3n_dna_summary.txt",
     threads:
         config['hisat3n_threads']
     resources:
-        mem_mb=14000 # lambda wc, input: max(25 * input.size_mb, 14000); Request 4 GB of memory for this rule
-    # benchmark: # https://stackoverflow.com/questions/46813371/meaning-of-the-benchmark-variables-in-snakemake
-    #         "fastq/{cell_id}.hisat_3n_pair_end_mapping_dna_mode.benchmark.txt"
-    shell: # # do not filter any reads in this step
+        mem_mb=14000
+    shell:
         """
         mkdir -p {bam_dir}
         hisat-3n {config[hisat3n_dna_reference]} -q  -1 {input.R1} -2 {input.R2} \
@@ -80,11 +76,11 @@ rule hisat_3n_pair_end_mapping_dna_mode:
 # separate hisat-3n unmapped reads
 rule separate_unmapped_reads:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam"),
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam",
     output:
-        unique_bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.unique_aligned.bam")),
-        multi_bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.multi_aligned.bam")),
-        unmapped_fastq=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.unmapped.fastq"))
+        unique_bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.unique_aligned.bam"),
+        multi_bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.multi_aligned.bam"),
+        unmapped_fastq=temp(bam_dir+"/{cell_id}.hisat3n_dna.unmapped.fastq")
     threads:
         1
     run:
@@ -100,10 +96,10 @@ rule separate_unmapped_reads:
 # split unmapped reads
 rule split_unmapped_reads:
     input:
-        unmapped_reads=local(bam_dir+"/{cell_id}.hisat3n_dna.unmapped.fastq")
+        unmapped_reads=bam_dir+"/{cell_id}.hisat3n_dna.unmapped.fastq"
     output:
-        split_r1=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.R1.fastq")),
-        split_r2=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.R2.fastq"))
+        split_r1=temp(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.R1.fastq"),
+        split_r2=temp(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.R2.fastq")
     params:
         output_prefix=lambda wildcards: bam_dir+f"/{wildcards.cell_id}.hisat3n_dna.split_reads"
     threads:
@@ -120,9 +116,9 @@ rule split_unmapped_reads:
 # - [16, 60], uniquely mapped to reverse strand
 rule hisat_3n_single_end_mapping_dna_mode:
     input:
-        fastq=local(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.{read_type}.fastq"), #"bam/{cell_id}.hisat3n_dna.split_reads.R1.fastq"
+        fastq=bam_dir+"/{cell_id}.hisat3n_dna.split_reads.{read_type}.fastq",
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.{read_type}.bam")),
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.{read_type}.bam"),
         stats="bam/{cell_id}.hisat3n_dna_split_reads_summary.{read_type}.txt"
     params:
         direction=lambda wildcards: "--directional-mapping-reverse " if wildcards.read_type=="R1" else "--directional-mapping "
@@ -130,8 +126,6 @@ rule hisat_3n_single_end_mapping_dna_mode:
         config['hisat3n_threads']
     resources:
         mem_mb=14000
-    # benchmark:
-    #         "fastq/{cell_id}-{read_type}.hisat_3n_single_end_mapping_dna_mode.benchmark.txt"
     shell:
         """
         hisat-3n {config[hisat3n_dna_reference]} -q -U {input.fastq} \
@@ -144,10 +138,10 @@ rule hisat_3n_single_end_mapping_dna_mode:
 # sort split reads bam file by read name
 rule merge_and_sort_split_reads_by_name:
     input:
-        r1_bam=local(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.R1.bam"),
-        r2_bam=local(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.R2.bam")
+        r1_bam=bam_dir+"/{cell_id}.hisat3n_dna.split_reads.R1.bam",
+        r2_bam=bam_dir+"/{cell_id}.hisat3n_dna.split_reads.R2.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.name_sort.bam"))
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.name_sort.bam")
     threads:
         1
     shell:
@@ -159,9 +153,9 @@ rule merge_and_sort_split_reads_by_name:
 # remove overlap read parts from the split alignment bam file
 rule remove_overlap_read_parts:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.name_sort.bam") #rules.merge_and_sort_split_reads_by_name.output.bam
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.split_reads.name_sort.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.no_overlap.bam"))
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.no_overlap.bam")
     threads:
         1
     run:
@@ -171,10 +165,10 @@ rule remove_overlap_read_parts:
 # merge all mapped reads
 rule merge_original_and_split_bam:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.unique_aligned.bam"),
-        split_bam=local(bam_dir+"/{cell_id}.hisat3n_dna.split_reads.no_overlap.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.unique_aligned.bam",
+        split_bam=bam_dir+"/{cell_id}.hisat3n_dna.split_reads.no_overlap.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.bam"))
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.bam")
     threads:
         1
     shell:
@@ -186,9 +180,9 @@ rule merge_original_and_split_bam:
 # sort split reads bam file by read name
 rule sort_all_reads_by_name:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.all_reads.bam"
     output:
-        bam="bam/{cell_id}.hisat3n_dna.all_reads.name_sort.bam" #do not add local, upload to remote
+        bam="bam/{cell_id}.hisat3n_dna.all_reads.name_sort.bam"
     threads:
         1
     shell:
@@ -221,7 +215,7 @@ rule sort_bam_by_pos:
     input:
         bam="bam/{cell_id}.hisat3n_dna.all_reads.name_sort.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.pos_sort.bam"))
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.pos_sort.bam")
     resources:
         mem_mb=1000
     # benchmark:
@@ -236,9 +230,9 @@ rule sort_bam_by_pos:
 # remove PCR duplicates
 rule dedup:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.pos_sort.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.all_reads.pos_sort.bam"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam")), #to keep this bam, change to: "bam/{cell_id}.hisat3n_dna.all_reads.deduped.bam",
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam"),
         stats="bam/{cell_id}.hisat3n_dna.all_reads.deduped.matrix.txt"
     resources:
         mem_mb=3000
@@ -254,9 +248,9 @@ rule dedup:
 # index the bam file
 rule index_bam:
     input:
-        bam=local(bam_dir+"/{input_name}.bam")
+        bam=bam_dir+"/{input_name}.bam"
     output:
-        bai=local(temp(bam_dir+"/{input_name}.bam.bai"))
+        bai=temp(bam_dir+"/{input_name}.bam.bai")
     shell:
         """
         samtools index {input.bam}
@@ -266,8 +260,8 @@ rule index_bam:
 # ==================================================
 rule unique_reads_allc:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam"),
-        bai=local(bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam.bai")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam",
+        bai=bam_dir+"/{cell_id}.hisat3n_dna.all_reads.deduped.bam.bai"
     output:
         allc="allc/{cell_id}.allc.tsv.gz",
         tbi="allc/{cell_id}.allc.tsv.gz.tbi",

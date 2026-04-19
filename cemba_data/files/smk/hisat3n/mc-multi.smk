@@ -35,7 +35,7 @@ rule summary:
         shell(config['post_mapping_script'])
 
         # generate the final summary
-        indir='.' if not config["gcp"] else workflow.default_remote_prefix
+        indir='.'
         snmc_summary(outname=output.csv,indir=indir)
 
         # cleanup
@@ -51,10 +51,10 @@ use rule * from hisat3n exclude unique_reads_allc,hisat_3n_pair_end_mapping_dna_
 
 rule hisat_3n_pair_end_mapping_dna_mode:
     input:
-        R1=local("fastq/{cell_id}-R1.trimmed.fq.gz"),
-        R2=local("fastq/{cell_id}-R2.trimmed.fq.gz")
+        R1="fastq/{cell_id}-R1.trimmed.fq.gz",
+        R2="fastq/{cell_id}-R2.trimmed.fq.gz"
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam")),
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam"),
         stats="bam/{cell_id}.hisat3n_dna_summary.txt",
     threads:
         config['hisat3n_threads']
@@ -70,9 +70,9 @@ rule hisat_3n_pair_end_mapping_dna_mode:
 
 rule mc_multi_sort_bam:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam") #output of rule hisat_3n_pair_end_mapping_dna_mode from hisat3n.smk
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam" #output of rule hisat_3n_pair_end_mapping_dna_mode from hisat3n.smk
     output:
-        bam=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.bam"))
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.bam")
     resources:
         mem_mb=1000
     threads:
@@ -85,10 +85,10 @@ rule mc_multi_sort_bam:
 # Separate unique aligned reads and multi-aligned reads with length > 30
 rule split_unique_and_multi_align_bam_dna:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.bam"
     output:
-        unique=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam")),
-        multi=local(temp(bam_dir+"/{cell_id}.hisat3n_dna.multi_align.bam"))
+        unique=temp(bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam"),
+        multi=temp(bam_dir+"/{cell_id}.hisat3n_dna.multi_align.bam")
     run:
         separate_unique_and_multi_align_reads(
             in_bam_path=input.bam,
@@ -101,7 +101,7 @@ rule split_unique_and_multi_align_bam_dna:
 
 rule mc_dedup_unique_bam:
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam"
     output:
         bam="bam/{cell_id}.hisat3n_dna.unique_align.deduped.bam",
         stats="bam/{cell_id}.hisat3n_dna.unique_align.deduped.matrix.txt"
@@ -142,7 +142,7 @@ rule unique_reads_allc:
 
 rule dedup_multi_bam: #dedup_unique_bam is included in mc.smk
     input:
-        bam=local(bam_dir+"/{cell_id}.hisat3n_dna.multi_align.bam")
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.multi_align.bam"
     output:
         bam="bam/{cell_id}.hisat3n_dna.multi_align.deduped.bam",
         stats="bam/{cell_id}.hisat3n_dna.multi_align.deduped.matrix.txt"
