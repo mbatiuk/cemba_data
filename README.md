@@ -80,10 +80,10 @@ yap default-mapping-config --mode mct --barcode_version V2 --hisat3n_dna_ref "~/
 # m3c
 yap demultiplex --fastq_pattern "Pool_Remind1_m3c/*.fastq.gz" -o mapping/Pool_Remind1_m3c -j 16 --aligner hisat3n --config_path m3c_config.ini
 # or
- yap-gcp run_demultiplex --fq_dir="Pool_Remind1_m3c" --outdir="mapping/Pool_Remind1_m3c" --gcp=False --n_jobs=16 --print_only=True 
+ yap-gcp run_demultiplex --fq_dir="Pool_Remind1_m3c" --outdir="mapping/Pool_Remind1_m3c" --n_jobs=16 --print_only=True 
  
 # mc
- yap-gcp run_demultiplex --fq_dir="Pool_Remind1_mC" --outdir="mapping/Pool_Remind1_mC" --gcp=False --n_jobs=16 --print_only=True 
+ yap-gcp run_demultiplex --fq_dir="Pool_Remind1_mC" --outdir="mapping/Pool_Remind1_mC" --n_jobs=16 --print_only=True 
 ```
 
 ## Run mapping
@@ -91,7 +91,7 @@ yap demultiplex --fastq_pattern "Pool_Remind1_m3c/*.fastq.gz" -o mapping/Pool_Re
 sh mapping/snakemake/qsub/snakemake_cmd.txt # old yap pipeline
 
 # or new yap-gcp pipeline
-yap-gcp run_mapping --workd="your_cell_level_directory" --gcp=False --config_path="m3c_config.ini" --aligner='hisat-3n' --n_jobs=62 --total_memory_gb=400 --qos="serial" --conda_base="mamba" --print_only=True
+yap-gcp run_mapping --workd="your_cell_level_directory" --config_path="m3c_config.ini" --aligner='hisat-3n' --n_jobs=62 --total_memory_gb=400 --qos="serial" --conda_base="mamba" --print_only=True
 #--n_jobs - amount of parallel jobs and requested cpu cores if run using sbatch
 #--qos - QOS option passed to sbatch script if run on HPC. This is HPC dependent
 #--conda_base - type of conda installation if run using sbatch
@@ -100,7 +100,7 @@ yap-gcp run_mapping --workd="your_cell_level_directory" --gcp=False --config_pat
 # You can also provide custom path to your conda installation e.g. "/custom/path/to/conda.sh"
 
 # or bismark
-yap-gcp run_mapping --workd="mapping" --gcp=False --config_path="m3c_config.ini" --aligner='bismark' --n_jobs=64 --print_only=True
+yap-gcp run_mapping --workd="mapping" --config_path="m3c_config.ini" --aligner='bismark' --n_jobs=64 --print_only=True
 sh mapping/snakemake/qsub/snakemake_cmd.txt
 ```
 
@@ -123,8 +123,8 @@ sh mapping/snakemake/qsub/snakemake_cmd.txt
 # /usr/bin/time -f "%e\t%M\t%P" UWA7648_CX2324_THM1_3_P12-2-N8 ; run one uid, 16 cpus; 4514.82 3393988 367%
 
 # (2). new yap-gcp pipeline, run on local HPC (faster)
-yap-gcp run_demultiplex --fq_dir=" /gale/raidix/rdx-2/illumina_runs/240322_M00412_0796_000000000-GK7K5_240325081847048305907-1/SALK054/" --outdir="mapping" --gcp=False --n_jobs=16
+yap-gcp run_demultiplex --fq_dir=" /gale/raidix/rdx-2/illumina_runs/240322_M00412_0796_000000000-GK7K5_240325081847048305907-1/SALK054/" --outdir="mapping" --n_jobs=16
 # time and memory usage: 69.52   282008  754%; 30X faster
-yap-gcp run_mapping --workd="mapping" --gcp=False --config_path="m3c_config.ini" --aligner='bismark' --n_jobs=64 --print_only=True
+yap-gcp run_mapping --workd="mapping" --config_path="m3c_config.ini" --aligner='bismark' --n_jobs=64 --print_only=True
 sh mapping/snakemake/qsub/snakemake_cmd.txt
 ```
