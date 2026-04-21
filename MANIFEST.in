@@ -1,5 +1,0 @@
-recursive-include cemba_data *.ini
-include LICENSE.txt
-recursive-exclude * __pycache__
-recursive-include cemba_data *.txt *.tsv *.csv *.fa *Snakefile *ipynb *smk *.yaml
-exclude doc

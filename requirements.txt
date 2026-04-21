@@ -1,4 +1,0 @@
-papermill
-ipykernel
-nbsphinx
-sphinx>=3
