@@ -1,10 +1,9 @@
 from .yap_gcp import *
-from ..mapping.pipelines import bam2mhap
+from ..mapping.pipelines.mhap import bam2mhap
 import fire
 
 def main():
 	fire.core.Display = lambda lines, out: print(*lines, file=out)
-	# fire.Fire()
 	fire.Fire({
 		'run_demultiplex': run_demultiplex,
 		'run_mapping': run_mapping,

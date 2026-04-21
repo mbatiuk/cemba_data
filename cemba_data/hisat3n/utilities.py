@@ -1,8 +1,9 @@
 import pathlib
 import re
-import yaml
+from collections import defaultdict
 import pandas as pd
-
+import yaml
+from pysam import TabixFile
 from ..utilities import get_configuration
 
 
@@ -26,7 +27,7 @@ def read_mapping_config(cwd: str = '.'):
                 tried.append(path)
                 if pathlib.Path(path).exists():
                     yaml_path = path
-    default_path = f'~/mapping_config.yaml'
+    default_path = '~/mapping_config.yaml'
     if pathlib.Path(default_path).exists():
         yaml_path = default_path
 
@@ -59,21 +60,18 @@ def validate_cwd_fastq_paths(cwd: str = '.'):
     -------
     fastq_table : pandas.DataFrame
     """
-    # get all fastq file paths
-    fastq_paths = [p
-                   for p in pathlib.Path(f'{cwd}/fastq/').glob('*.[fq.gz][fastq.gz]')
-                   if 'trim' not in p.name]
+    fastq_paths = [
+        p for p in pathlib.Path(f'{cwd}/fastq/').glob('*.[fq.gz][fastq.gz]')
+        if 'trim' not in p.name
+    ]
 
-    # parse cell id and match fastq pairs
-    fastq_pattern = re.compile(r'(?P<cell_id>.+)(-|_)(?P<read_type>(R1|R2|r1|r2)).(fastq|fq)(.gz)*')
+    fastq_pattern = re.compile(
+        r'(?P<cell_id>.+)(-|_)(?P<read_type>(R1|R2|r1|r2)).(fastq|fq)(.gz)*'
+    )
     fastq_records = {}
     for p in fastq_paths:
         match = fastq_pattern.match(p.name)
-        if match is None:
-            # print(f'WARNING: {p} has FASTQ file path suffix, but do not match '
-            #       f'expected file name pattern {fastq_pattern}')
-            pass
-        else:
+        if match is not None:
             cell_id = match.group('cell_id')
             read_type = match.group('read_type')
             fastq_records[cell_id, read_type.upper()] = str(p)
@@ -87,10 +85,39 @@ def validate_cwd_fastq_paths(cwd: str = '.'):
         raise ValueError('No R1 or R2 fastq files found')
     fastq_table = fastq_table[['R1', 'R2']].copy()
 
-    # raise error if fastq file not paired
     missing_file = fastq_table.isna().sum(axis=1) > 0
     if missing_file.sum() > 0:
         for cell in missing_file[missing_file].index:
             print(f'{cell} missing R1 or R2 FASTQ file.')
-        raise FileNotFoundError(f'FASTQ files in {pathlib.Path(f"{cwd}/fastq/").absolute()} is not all paired.')
+        raise FileNotFoundError(
+            f'FASTQ files in {pathlib.Path(f"{cwd}/fastq/").absolute()} is not all paired.'
+        )
     return fastq_table
+
+
+def get_allc_lambda_frac(allc_list, num_upstr_bases):
+    """Compute bisulfite conversion rate from lambda spike-in DNA (chrL)."""
+    num_upstr_bases = int(num_upstr_bases)
+    records = {}
+    for path in allc_list:
+        mc_counts = defaultdict(int)
+        cov_counts = defaultdict(int)
+        with TabixFile(str(path)) as allc:
+            cell = pathlib.Path(path).name.split('.')[0]
+            try:
+                for line in allc.fetch('chrL'):
+                    chrom, pos, strand, context, mc, cov, _ = line.split('\t')
+                    context = context[num_upstr_bases:num_upstr_bases + 2]
+                    mc_counts[context] += int(mc)
+                    cov_counts[context] += int(cov)
+                df = pd.DataFrame({'mc': pd.Series(mc_counts), 'cov': pd.Series(cov_counts)})
+                df = df.reindex(['CG', 'CC', 'CT', 'CA']).fillna(0)
+                cy_cov = df.loc['CT', 'cov'] + df.loc['CC', 'cov']
+                cy_frac = (
+                    (df.loc['CT', 'mc'] + df.loc['CC', 'mc']) / cy_cov
+                    if cy_cov > 0 else 0
+                )
+                records[cell] = {'LambdaCYFrac': cy_frac, 'LambdaCYCov': cy_cov}
+            except ValueError:
+                records[cell] = {'LambdaCYFrac': 0, 'LambdaCYCov': 0}
+    return pd.DataFrame(records).T

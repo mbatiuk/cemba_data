@@ -6,39 +6,14 @@ import gzip
 import pysam
 from collections import defaultdict
 
-def determine_method(bam_path):
-	fbam = pysam.AlignmentFile(os.path.expanduser(bam_path), 'rb')
-	read = fbam.__next__()
-	fbam.close()
-	# Using the YZ tag of hisat-3n BAM file or XG tag of bismark BAM file.
-	# If the YZ tag is "+" or XG tag is "CT", the read is C to T conversion, I change the flag to forward mapping
-	# no matter R1 or R2 by read.is_forward = True
-	# If the YZ tag is "-" or XG tag is "GA", the read is G to A conversion, I change the flag to reverse mapping
-	# no matter R1 or R2 by read.is_forward = False
-	# In this case, the read orientation is the same as bismark bam file, and the following base
-	if read.has_tag('YZ') and read.get_tag('YZ') in ['+', '-']:  # hisat-3n
-		return 'hisat-3n'
-	elif read.has_tag('XG') and read.get_tag('XG') in ['CT', 'GA']:  # bismark
-		return 'bismark'
-	else:
-		return 'directional'
 def _is_hisat3n_ct_read(read):
 	return read.get_tag('YZ') == '+'
-def _is_bismark_ct_read(read):
-	return read.get_tag('XG') == 'CT'
-def _is_forward_read(read):
-	return read.is_forward
-
-def _bismark_is_read1(read):
-	read1=True if read.get_tag('XR')=='GA' else False # R1: G/A converted, R2: C/T converted
-	# for strand, if read.get_tag('XG')=='GA', then, it must be reverse strand, elsewise, it is forward strand (mapped to C/T reference)
-	return read1
 
 def _hisat3n_is_read1(read):
 	return read.is_read1
 
 def bam2mhap(bam_path=None,annotation="~/Ref/hg38/annotations/hg38_allc.gz",
-		 output="test.mhap",method=None,pattern="CGN"):
+		 output="test.mhap",pattern="CGN"):
 	"""
 	convert bam into .mhap.gz, similar to:
 		prefix=""
@@ -98,33 +73,18 @@ def bam2mhap(bam_path=None,annotation="~/Ref/hg38/annotations/hg38_allc.gz",
 	else:
 		assert isinstance(pattern,(list,tuple))
 		patterns=pattern
-	# print(patterns)
 	patterns=set(patterns)
 
 	for file in [output,f"{output}.gz",f"{output}.gz.tbi"]:
 		if os.path.exists(file):
 			print(f"Deleting existed file: {file}")
 			os.remove(file)
-	if method is None:
-		try:
-			method=determine_method(bam_path)
-		except:
-			method="directional" # bam file is empty, will touch an empty output file finally
-	if method.lower() in ['hisat3n','hisat-3n','hisat3']:
-		ct_read_func=_is_hisat3n_ct_read
-		is_read1_func=_hisat3n_is_read1
-	elif method.lower()=='bismark':
-		ct_read_func = _is_bismark_ct_read
-		is_read1_func =_bismark_is_read1
-	else:
-		ct_read_func = _is_forward_read
-		is_read1_func = _hisat3n_is_read1
+
+	ct_read_func = _is_hisat3n_ct_read
+	is_read1_func = _hisat3n_is_read1
 	fbam = pysam.AlignmentFile(os.path.expanduser(bam_path), 'rb')
 	f = pysam.TabixFile(os.path.expanduser(annotation)) # for allc.bed.gz, 1-based
 	for chrom in f.contigs:
-		# forward_cytosine_pos,reverse_cytosine_pos=get_cytosine_positions(f,chrom,patterns) # 1-based
-		# if len(forward_cytosine_pos) == 0 and len(reverse_cytosine_pos)==0:  # cytosine_positions is 1-based, pos of C
-		# 	continue
 		print(chrom)
 		R = []
 		pre_pos,pre_ct_read,pre_read1=None,None,None
@@ -152,23 +112,17 @@ def bam2mhap(bam_path=None,annotation="~/Ref/hg38/annotations/hg38_allc.gz",
 					continue #start pos in bam file is the start pos of the first matched 'M' base, skipping unmatched base
 				else:
 					break #get the first matched cigar and length
-			# assert cigar==0
 			positions = read.positions # 0-based
 			seq=seq[:length]
-			# assert len(seq)==len(read.positions)
 			if ct_read: #CT read (OT or CTOT, mapped to C/T ref), posision of C
 				ovlp_cytosine_idx = [idx for idx, pos in enumerate(positions) if
 									 pos + 1 in forward_cytosine_pos] #pos is 0-based, forward_cytosine_pos is 1-based
-				# overlapped_cytosine_idx is the index for C
-				# cytosine=''.join([seq[idx] for idx in overlapped_cytosine_idx])
 				vector = ''.join(['1' if seq[idx]=='C' else '0' for idx in ovlp_cytosine_idx]) #1 for methylated, 0 for unmethylated
-				# read.is_forward = True  # to be consistent with bismark: if read.get_tag('XG')=='GA', then, it must be reverse strand, elsewise, it is forward strand (mapped to C/T reference)
 				strand='+'
 			else: # G/A read (OB or CTOB, Mapped to G/A ref), postion of G (next of C)
 				ovlp_cytosine_idx = [idx for idx, pos in enumerate(positions) if
 									 pos + 1 in reverse_cytosine_pos] #index for the pos of G (+) or C (-)
 				vector = ''.join(['1' if seq[idx]=='G' else '0' for idx in ovlp_cytosine_idx]) # G means the C is in the reverse strand
-				# read.is_forward = False  # to be consistent with bismark
 				strand = '-'
 			if len(ovlp_cytosine_idx)>0:
 				R.append([read.reference_name, positions[ovlp_cytosine_idx[0]]+1,

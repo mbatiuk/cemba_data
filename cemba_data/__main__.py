@@ -22,13 +22,7 @@ snmC-seq based single-cell sequencing technologies.
 
 See documentation at https://hq-1.gitbook.io/mc/
 """
-
-EPILOG = """
-Author: Hanqing Liu, hanliu@salk.edu
-
-If this looks good, send coffee to...
-"""
-
+EPILOG = ''
 
 class NiceFormatter(logging.Formatter):
 	"""
@@ -333,14 +327,6 @@ def demultiplex_register_subparser(subparser):
 		help="Number of cores to use. Note that the demultiplex step will only use at most 32 cores, "
 			 "the merge lane step will use the number of cores you provided."
 	)
-
-	parser_req.add_argument(
-		"--aligner",
-		type=str,
-		required=True,
-		choices=['bismark', 'hisat3n'],
-		help="Choice of aligner and corresponding mapping pipelines."
-	)
 	return
 
 
@@ -386,13 +372,6 @@ def print_default_config_register_subparser(subparser):
 	)
 
 	parser.add_argument(
-		"--bismark_ref",
-		type=str,
-		required=False,
-		help="Path to the bismark reference"
-	)
-
-	parser.add_argument(
 		"--hisat3n_dna_ref",
 		type=str,
 		required=False,
@@ -412,13 +391,6 @@ def print_default_config_register_subparser(subparser):
 		type=str,
 		required=True,
 		help="Path to the genome fasta file"
-	)
-
-	parser.add_argument(
-		"--star_ref",
-		type=str,
-		required=False,
-		help="[mct only] Path to the STAR reference, required if mode is mct"
 	)
 
 	parser.add_argument(
@@ -485,14 +457,6 @@ def start_from_cell_fastq_register_subparser(subparser):
 		type=str,
 		required=True,
 		help="Path pattern with wildcard to match all cell-level FASTQ files, pattern with wildcard must be quoted."
-	)
-
-	parser_req.add_argument(
-		"--aligner",
-		type=str,
-		required=False,
-		choices=['bismark', 'hisat3n'],
-		help="Choice of aligner and corresponding mapping pipelines."
 	)
 
 	parser_req.add_argument(

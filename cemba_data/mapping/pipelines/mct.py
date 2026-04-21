@@ -25,16 +25,14 @@ def mct_config_str(config):
     bool_parameters = {'unmapped_fastq': False}
 
     str_parameters = {
-        'mode': 'mc',
+        'mode': 'mct',
         'barcode_version': 'required',
         'r1_adapter': 'AGATCGGAAGAGCACACGTCTGAAC',
         'r2_adapter': 'AGATCGGAAGAGCGTCGTGTAGGGA',
-        'bismark_reference': 'required',
         'hisat3n_dna_reference': 'required',
         'hisat3n_rna_reference': 'required',
         'hisat3n_repeat_index_type': 'no-repeat',
         'reference_fasta': 'required',
-        'star_reference': 'required',
 		'chrom_size_path': 'required',
         'gtf_path': 'required',
         'feature_type': 'gene',
@@ -44,14 +42,6 @@ def mct_config_str(config):
 		'mc_stat_alias': 'mCH mCG mCCC',
         'annotation_path': None
     }
-    if 'hisat3n_dna_reference' in config and config["hisat3n_dna_reference"]!="CHANGE_THIS_TO_YOUR_HISAT3N_DNA_REFERENCE":
-        del str_parameters['bismark_reference']
-        del str_parameters['star_reference']
-    else:
-        del str_parameters['hisat3n_dna_reference']
-        del str_parameters['hisat3n_rna_reference']
-        del str_parameters['hisat3n_repeat_index_type']
-
     typed_config = {}
     for k, default in int_parameters.items():
         if k in config:

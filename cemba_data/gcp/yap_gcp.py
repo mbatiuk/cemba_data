@@ -1,12 +1,9 @@
 import os
-import sys
 import pandas as pd
 import cemba_data
 import glob
-import numpy as np
 import pathlib
-import subprocess
-from cemba_data.mapping.pipelines import make_all_snakefile, make_snakefile, prepare_run
+from cemba_data.mapping.pipelines import make_all_snakefile, prepare_run
 from snakemake.io import glob_wildcards
 
 PACKAGE_DIR = cemba_data.__path__[0]
@@ -151,7 +148,7 @@ def run_demultiplex(fq_dir="fastq", outdir="test",
 
 
 def run_mapping(workd,
-                config_path="mapping_config.ini", aligner='hisat-3n',
+                config_path="mapping_config.ini",
                 n_jobs=64, total_jobs=12, total_memory_gb=None,
                 print_only=False,
                 snakemake_template=None, qos='serial', conda_base='mamba'):
@@ -173,7 +170,7 @@ def run_mapping(workd,
 	
 	cmds = []
 	for uid in uids:
-		make_all_snakefile(output_folder, uid, aligner=aligner,
+		make_all_snakefile(output_folder, uid,
 		                   snakemake_template=snakemake_template,
 		                   pattern=pattern)
 		cmd = f"snakemake -s {output_folder}/{uid}/Snakefile {common_str} -d {output_folder}/{uid}"
@@ -197,7 +194,7 @@ def run_mapping(workd,
 def start_from_cell_bam(
 		indir="bam", bam_pattern="*.hisat3n_dna.all_reads.deduped.bam",
 		output_dir="mapping",
-		config_path="mapping_config.ini", aligner='hisat-3n',
+		config_path="mapping_config.ini",
 		n_jobs=64, print_only=False,
 		snakemake_template=None, n_group=64,
 		total_memory_gb=128):
@@ -217,13 +214,13 @@ def start_from_cell_bam(
 		bam_dir = os.path.join(output_dir, f'Group{group_id}/bam')
 		os.makedirs(bam_dir, exist_ok=True)
 		
-		# make symlink of fastq files, using dir structure of demultiplex
+		# make symlink of bam files, using dir structure of demultiplex
 		new_bam_path = os.path.join(bam_dir, os.path.basename(bam_path))
 		if not os.path.exists(new_bam_path):
 			os.symlink(bam_path, new_bam_path)
 	
 	for group_id in range(groups):
-		make_all_snakefile(output_dir, f'Group{group_id}', aligner=aligner,
+		make_all_snakefile(output_dir, f'Group{group_id}',
 		                   snakemake_template=snakemake_template,
 		                   pattern=f"bam/{bam_pattern}")
 	

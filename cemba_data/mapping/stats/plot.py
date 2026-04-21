@@ -144,7 +144,7 @@ def cutoff_vs_cell_remain(data,
     data = data[(data < xlim[1]) & (data > xlim[0])]
 
     fig, ax1 = plt.subplots(figsize=(6, 3))
-    ax1 = sns.distplot(data, bins=bins, kde=kde, ax=ax1)
+    sns.histplot(data, bins=bins, kde=kde, ax=ax1)
     ax1.set_xlim(xlim)
     ax1.set_xlabel(data.name)
     if distribution_ylim is not None:

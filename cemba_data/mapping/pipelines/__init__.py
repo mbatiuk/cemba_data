@@ -7,12 +7,10 @@ import cemba_data
 from .m3c import m3c_config_str
 from .mc import mc_config_str
 from .mct import mct_config_str
-from ._4m import _4m_config_str
 from ...utilities import get_configuration
-from .mhap import bam2mhap
-# from cemba_data.utilities import get_configuration
-# Load defaults
+
 PACKAGE_DIR = pathlib.Path(cemba_data.__path__[0])
+
 def prepare_uid_snakefile(uid_dir, config_str, snake_template):
 	cell_ids = [path.name.split('.')[0][:-3] for path in (uid_dir / 'fastq').glob('*R1.fq.gz')]
 	cell_id_str = f'CELL_IDS = {cell_ids}\n'
@@ -43,54 +41,14 @@ def validate_mapping_config(output_dir):
 		config_str = mct_config_str(config)
 	elif mode.split('-')[0] == 'm3c':
 		config_str = m3c_config_str(config)
-	elif mode.split('-')[0] == '4m':
-		config_str = _4m_config_str(config)
 	else:
 		raise ValueError(f'Unknown mode {mode}')
 
 	print(f'Mapping config file looks good. Here is what will be used in generating Snakefile:\n{config_str}')
 	return
 
-def make_snakefile(output_dir,aligner="bismark"):
-	output_dir = pathlib.Path(output_dir).absolute()
-	mapping_config_name = list(output_dir.glob('mapping_config.*'))[0].name
-	config = get_configuration(output_dir / mapping_config_name)
-	try:
-		mode = config['mode']
-	except KeyError:
-		raise KeyError('mode not found in the config file.')
 
-	if mode.split('-')[0] == 'mc':
-		config_str = mc_config_str(config)
-	elif mode.split('-')[0] == 'mct':
-		config_str = mct_config_str(config)
-	elif mode.split('-')[0] == 'm3c':
-		config_str = m3c_config_str(config)
-	elif mode.split('-')[0] == '4m':
-		config_str = _4m_config_str(config)
-	else:
-		raise ValueError(f'Unknown mode {mode}')
-	# print('Making Snakefile based on mapping config INI file. The parameters are:')
-	# print(config_str)
-
-	if aligner.lower()=="bismark":
-		snakefile_path=os.path.join(PACKAGE_DIR, f'files/smk/bismark/{mode.lower()}.smk')
-	elif aligner.lower() in ['hisat3n', 'hisat-3n', 'hisat_3n', 'hisat']:
-		snakefile_path = os.path.join(PACKAGE_DIR, f'files/smk/hisat3n/{mode.lower()}.smk')
-	else:
-		raise ValueError(f"Unknown aligner: {aligner}")
-	with open(snakefile_path) as f:
-		snake_template = f.read()
-
-	for sub_dir in output_dir.iterdir():
-		if sub_dir.is_dir():
-			if sub_dir.name not in ['stats', 'snakemake']:
-				prepare_uid_snakefile(uid_dir=sub_dir,
-									  config_str=config_str,
-									  snake_template=snake_template)
-	return
-
-def make_all_snakefile(output_dir, subdir=None, aligner="hisat-3n",
+def make_all_snakefile(output_dir, subdir=None,
 					   snakemake_template=None, pattern="fastq/{cell_id}-R1.fq.gz"):
 	"""
 
@@ -98,7 +56,6 @@ def make_all_snakefile(output_dir, subdir=None, aligner="hisat-3n",
 	----------
 	output_dir :
 	subdir :
-	aligner :
 	snakemake_template :
 	pattern : str
 		used to get cell_ids
@@ -109,12 +66,11 @@ def make_all_snakefile(output_dir, subdir=None, aligner="hisat-3n",
 
 	"""
 	from snakemake.io import glob_wildcards
-	# assert os.path.exists(os.path.join(output_dir,'mapping_config.ini'))
 	try:
 		mapping_config_name = [file for file in os.listdir(output_dir) if file.startswith('mapping_config.')][0]
 	except:
 		raise ValueError(f"Could not find mapping_config.* under {output_dir}")
-	config = get_configuration(os.path.join(output_dir,mapping_config_name))
+	config = get_configuration(os.path.join(output_dir, mapping_config_name))
 	try:
 		mode = config['mode']
 	except KeyError:
@@ -126,35 +82,27 @@ def make_all_snakefile(output_dir, subdir=None, aligner="hisat-3n",
 		config_str = mct_config_str(config)
 	elif mode.split('-')[0] == 'm3c':
 		config_str = m3c_config_str(config)
-	elif mode.split('-')[0] =='4m':
-		config_str = _4m_config_str(config)
 	else:
 		print(mode)
 		raise ValueError(f'Unknown mode {mode}')
-	# print('Making Snakefile based on mapping config INI file. The parameters are:')
-	# print(config_str)
 
-	if not snakemake_template is None:
-		snakefile_path=os.path.expanduser(snakemake_template)
+	if snakemake_template is not None:
+		snakefile_path = os.path.expanduser(snakemake_template)
 	else:
-		if aligner.lower() == "bismark":
-			snakefile_path = os.path.join(PACKAGE_DIR, f'files/smk/bismark/{mode.lower()}.smk')
-		elif aligner.lower() in ['hisat3n', 'hisat-3n', 'hisat_3n', 'hisat']:
-			snakefile_path = os.path.join(PACKAGE_DIR, f'files/smk/hisat3n/{mode.lower()}.smk')
-		else:
-			raise ValueError(f"Unknown aligner: {aligner}")
+		snakefile_path = os.path.join(PACKAGE_DIR, f'files/smk/hisat3n/{mode.lower()}.smk')
 
 	with open(snakefile_path) as f:
 		snake_template = f.read()
 
-	if not subdir is None:
-		sub_folder=os.path.join(output_dir,subdir)
+	if subdir is not None:
+		sub_folder = os.path.join(output_dir, subdir)
 		if not os.path.exists(sub_folder):
-			os.makedirs(sub_folder,exist_ok=True)
+			os.makedirs(sub_folder, exist_ok=True)
 	else:
-		sub_folder=output_dir
-	if pattern=='CELL_IDS':
-		cell_ids=pd.read_csv(os.path.join(sub_folder,pattern),sep='\t',index_col=0).index.tolist()
+		sub_folder = output_dir
+
+	if pattern == 'CELL_IDS':
+		cell_ids = pd.read_csv(os.path.join(sub_folder, pattern), sep='\t', index_col=0).index.tolist()
 	else:
 		cell_ids = glob_wildcards(os.path.join(sub_folder, pattern))[0]
 
@@ -162,19 +110,17 @@ def make_all_snakefile(output_dir, subdir=None, aligner="hisat-3n",
 		raise ValueError(f"No cell fastq were identified under {sub_folder}/fastq")
 	cell_id_str = f'CELL_IDS = {cell_ids}\n'
 
-	if aligner=="bismark":
-		total_snakefile = config_str + cell_id_str + snake_template
-	else: # hisat-3n
-		total_snakefile = cell_id_str + snake_template
-		if not os.path.exists(os.path.join(output_dir,'snakemake')):
-			os.makedirs(os.path.join(output_dir,'snakemake'),exist_ok=True)
-		subprocess.run(['touch', os.path.join(output_dir,'snakemake/hisat3n')], check=True)
-	with open(os.path.join(sub_folder,'Snakefile'), 'w') as f:
-	# with open(f'{subdir}.smk', 'w') as f:
+	total_snakefile = cell_id_str + snake_template
+	if not os.path.exists(os.path.join(output_dir, 'snakemake')):
+		os.makedirs(os.path.join(output_dir, 'snakemake'), exist_ok=True)
+	subprocess.run(['touch', os.path.join(output_dir, 'snakemake/hisat3n')], check=True)
+
+	with open(os.path.join(sub_folder, 'Snakefile'), 'w') as f:
 		f.write(total_snakefile)
 	return
 
-def make_snakefile_hisat3n(output_dir,aligner='hisat-3n'):
+
+def make_snakefile_hisat3n(output_dir):
 	output_dir = pathlib.Path(output_dir)
 
 	mapping_config_name = list(output_dir.glob('mapping_config.*'))[0].name
@@ -194,16 +140,11 @@ def make_snakefile_hisat3n(output_dir,aligner='hisat-3n'):
 	stats_dir = output_dir / 'stats'
 	stats_dir.mkdir(exist_ok=True)
 
-	package_dir = cemba_data.__path__[0]
-	if aligner.lower()=="bismark":
-		snakefile_path=os.path.join(PACKAGE_DIR, f'files/smk/bismark/{mode.lower()}.smk')
-	elif aligner.lower() in ['hisat3n', 'hisat-3n', 'hisat_3n', 'hisat']:
-		snakefile_path = os.path.join(PACKAGE_DIR, f'files/smk/hisat3n/{mode.lower()}.smk')
-	else:
-		raise ValueError(f"Unknown aligner: {aligner}")
+	snakefile_path = os.path.join(PACKAGE_DIR, f'files/smk/hisat3n/{mode.lower()}.smk')
+
 	if not pathlib.Path(snakefile_path).exists():
 		print('Possible snakefile templates:')
-		for p in pathlib.Path(f'{package_dir}/hisat3n/snakefile/').glob('*.smk'):
+		for p in pathlib.Path(f'{PACKAGE_DIR}/files/smk/hisat3n/').glob('*.smk'):
 			print(p)
 		raise ValueError(f'Mode {mode} not supported, '
 						 f'because Snakefile {snakefile_path} not found.')
@@ -217,11 +158,12 @@ def make_snakefile_hisat3n(output_dir,aligner='hisat-3n'):
 	subprocess.run(['touch', f'{output_dir}/snakemake/hisat3n'], check=True)
 	return
 
+
 def write_qsub_commands(output_dir, cores_per_job, total_memory_gb=None,
 						script_dir=None):
 	if total_memory_gb is None:
-		total_memory_gb=2*cores_per_job
-	config_par=''
+		total_memory_gb = 2 * cores_per_job
+	config_par = ''
 	cmds = {}
 	snake_files = list(output_dir.glob('*/Snakefile'))
 	for snake_file in snake_files:
@@ -233,7 +175,7 @@ def write_qsub_commands(output_dir, cores_per_job, total_memory_gb=None,
 	with open(script_path, 'w') as f:
 		try:
 			uid_order = pd.read_csv(
-				output_dir / 'stats/UIDTotalCellInputReadPairs.csv', index_col=0,header=None
+				output_dir / 'stats/UIDTotalCellInputReadPairs.csv', index_col=0, header=None
 			).squeeze().sort_values(ascending=False)
 			for uid in uid_order.index:
 				if uid in cmds:
@@ -251,11 +193,9 @@ def write_qsub_commands(output_dir, cores_per_job, total_memory_gb=None,
 	return script_path
 
 
-
-
 def write_sbatch_commands(output_dir, cores_per_job, script_dir, total_mem_mb, qos):
 	output_dir_name = output_dir.name
-	outdir=str(output_dir.absolute())
+	outdir = str(output_dir.absolute())
 	cmds = {}
 	snake_files = list(output_dir.glob('*/Snakefile'))
 	for snake_file in snake_files:
@@ -272,7 +212,7 @@ def write_sbatch_commands(output_dir, cores_per_job, script_dir, total_mem_mb, q
 	with open(script_path, 'w') as f:
 		try:
 			uid_order = pd.read_csv(
-				output_dir / 'stats/UIDTotalCellInputReadPairs.csv', index_col=0,header=None
+				output_dir / 'stats/UIDTotalCellInputReadPairs.csv', index_col=0, header=None
 			).squeeze().sort_values(ascending=False)
 			for uid in uid_order.index:
 				if uid in cmds:
@@ -289,8 +229,9 @@ def write_sbatch_commands(output_dir, cores_per_job, script_dir, total_mem_mb, q
 				f.write(cmd + '\n')
 	return f'{outdir}/snakemake/sbatch/snakemake_{qos}_cmd.txt'
 
+
 def prepare_qsub(name, snakemake_dir, total_jobs, cores_per_job, total_memory_gb):
-	memory_gb_per_core = int(total_memory_gb / cores_per_job) if not total_memory_gb is None else 2
+	memory_gb_per_core = int(total_memory_gb / cores_per_job) if total_memory_gb is not None else 2
 	output_dir = snakemake_dir.parent
 	qsub_dir = snakemake_dir / 'qsub'
 	qsub_dir.mkdir(exist_ok=True)
@@ -332,8 +273,9 @@ yap qsub \
 	print('#' * 60 + '\n')
 	return
 
+
 def prepare_sbatch(name, snakemake_dir, qos, total_memory_gb=None, cores_per_job=None, conda_base='mamba'):
-	input_total_mem_mb = total_memory_gb * 1024 if not total_memory_gb is None else None
+	input_total_mem_mb = total_memory_gb * 1024 if total_memory_gb is not None else None
 	output_dir = snakemake_dir.parent
 	outdir = str(output_dir.absolute())
 	mode = get_configuration(output_dir / 'mapping_config.ini')['mode']
@@ -383,13 +325,14 @@ def prepare_sbatch(name, snakemake_dir, qos, total_memory_gb=None, cores_per_job
 	print('#' * 40 + '\n')
 	return
 
+
 def prepare_run(output_dir, total_jobs=12, cores_per_job=10, total_memory_gb=None,
 				name=None, qos='serial', conda_base='mamba'):
 	config = get_configuration(output_dir / 'mapping_config.ini')
 	mode = config['mode']
 	if mode.split('-')[0] in ['mc', 'm3c'] and cores_per_job < 4:
 		raise ValueError(f'cores must >= 4 to run this pipeline.')
-	elif mode.split('-')[0] in ['mct', '4m'] and cores_per_job < 10:
+	elif mode.split('-')[0] in ['mct'] and cores_per_job < 10:
 		raise ValueError(f'cores must >= 10 to run this pipeline.')
 
 	output_dir = pathlib.Path(output_dir).absolute()
@@ -403,14 +346,15 @@ def prepare_run(output_dir, total_jobs=12, cores_per_job=10, total_memory_gb=Non
 				 total_jobs=total_jobs,
 				 cores_per_job=cores_per_job,
 				 total_memory_gb=total_memory_gb)
-	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, qos=qos, 
+	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, qos=qos,
 				   total_memory_gb=total_memory_gb, cores_per_job=cores_per_job,
 				   conda_base=conda_base)
 
 	print(f"Once all commands are executed successfully, use 'yap summary' to generate final mapping summary.")
 	return
 
-def start_from_cell_fastq(output_dir, fastq_pattern, config_path, aligner='bismark', n_group=64,
+
+def start_from_cell_fastq(output_dir, fastq_pattern, config_path, n_group=64,
 						  n_jobs=64, total_memory_gb=None, qos='serial'):
 	output_dir = pathlib.Path(output_dir).absolute()
 	if output_dir.exists():
@@ -458,11 +402,7 @@ def start_from_cell_fastq(output_dir, fastq_pattern, config_path, aligner='bisma
 		new_r2_path = fastq_dir / r2_path.name
 		new_r2_path.symlink_to(r2_path)
 
-	# prepare scripts
-	if aligner.lower() == 'bismark':
-		make_snakefile(output_dir)
-	else:
-		make_snakefile_hisat3n(output_dir)
+	make_snakefile_hisat3n(output_dir)
 	if total_memory_gb is None:
 		total_memory_gb = 2 * n_jobs
 	prepare_run(output_dir, cores_per_job=n_jobs, total_memory_gb=total_memory_gb, qos=qos)

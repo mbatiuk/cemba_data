@@ -9,7 +9,7 @@ import subprocess
 import pandas as pd
 import cemba_data
 from .fastq_dataframe import make_fastq_dataframe
-from ..mapping.pipelines import make_snakefile, make_snakefile_hisat3n,prepare_run, validate_mapping_config
+from ..mapping.pipelines import make_snakefile_hisat3n, prepare_run, validate_mapping_config
 from ..utilities import snakemake, get_configuration
 
 # logger
@@ -464,18 +464,8 @@ def demultiplex_pipeline(fastq_pattern, output_dir, config_path, cpu, aligner):
 		_reformat_v2_single(output_dir=output_dir)
 	_skip_abnormal_fastq_pairs(output_dir=output_dir)
 
-	if aligner.lower() == 'bismark':
-		make_snakefile(output_dir=output_dir)
-
-		# this is just a convenient step, so I fix the parameters here
-		# users should change the resulting batch submission
-		# or generate by themselves if they want different setting.
-		prepare_run(output_dir)
-	elif aligner.lower() in ('hisat3n', 'hisat-3n', 'hisat_3n', 'hisat'):
-		make_snakefile_hisat3n(output_dir=output_dir)
-		prepare_run(output_dir)
-	else:
-		ValueError(f'Unsupported aligner {aligner}, aligner must be either "hisat3n" or "bismark"')
+	make_snakefile_hisat3n(output_dir=output_dir)
+	prepare_run(output_dir)
 	return
 
 
@@ -484,10 +474,6 @@ def update_snakemake(output_dir):
 	use this function to update snakefile and snakemake commands."""
 	output_dir = pathlib.Path(output_dir).absolute()
 
-	if pathlib.Path(output_dir / 'snakemake/hisat3n').exists():
-		# hisat3n pipeline
-		make_snakefile_hisat3n(output_dir=output_dir)
-	else:
-		make_snakefile(output_dir)
+	make_snakefile_hisat3n(output_dir=output_dir)
 	prepare_run(output_dir)
 	return
