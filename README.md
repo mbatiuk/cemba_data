@@ -6,7 +6,7 @@ Original code is from https://github.com/DingWB/cemba_data and https://github.co
 
 Code was significantly trimmed and refactored, bug fixes were introduced
 
-To increase simplicity legacy code focused on V1 barcoding, bismark mapping and cloud integration were dropped
+To increase simplicity legacy code focused on V1 barcoding, bismark mapping and cloud integration was dropped
 
 This is local-only implementation based on hisat3n mapping
 
