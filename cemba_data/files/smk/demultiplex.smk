@@ -20,21 +20,19 @@ for key in default_config:
 fq_dir = pathlib.Path(config["fq_dir"]).absolute()
 
 outdir=config.get("outdir","mapping")
-barcode_version = config.get("barcode_version","V2")
 
 df_fq=get_fastq_info(fq_dir,outdir)
-uid_fastqs_dict=df_fq.loc[:,['uid','R1','R2']].groupby('uid').agg(lambda x:x.tolist()).to_dict(orient='index') #uid_fastqs_dict[uid]['R1'] and R2 are list
+uid_fastqs_dict=df_fq.loc[:,['uid','R1','R2']].groupby('uid').agg(lambda x:x.tolist()).to_dict(orient='index')
 
-if barcode_version == 'V2' and df_fq['multiplex_group'].nunique() == 1:
-    # print('Detect only single multiplex group in each plate, will use V2-single mode.')
-    barcode_version = 'V2-single'
+# detect single multiplex group experiment
+v2_single = df_fq['multiplex_group'].nunique() == 1
 
-df_index=get_random_index(df_fq.uid.unique().tolist(),barcode_version,outdir) #old uids, 16 each pool
+df_index=get_random_index(df_fq.uid.unique().tolist(),outdir)
 
 rule summary_demultiplex:
     input:
         stats=expand(outdir+"/{uid}/demultiplex.stats.txt",
-                                    uid=df_index.old_uid.unique().tolist()) #old uids, 16
+                                    uid=df_index.old_uid.unique().tolist())
     output:
         csv=outdir+"/stats/demultiplex.stats.csv",
         fq_info=outdir+"/stats/fastq_info.tsv",
@@ -45,7 +43,7 @@ rule summary_demultiplex:
         shell(f"mkdir -p {params.stat_dir}")
         df_fq.to_csv(output.fq_info,sep='\t',index=False)
         df_index.to_csv(output.index_info,sep='\t',index=False)
-        random_index_fasta_path=os.path.join(PACKAGE_DIR,'files','random_index_v1.fa') if barcode_version=='V1' else os.path.join(PACKAGE_DIR,'files','random_index_v2','random_index_v2.fa')
+        random_index_fasta_path=os.path.join(PACKAGE_DIR,'files','random_index_v2','random_index_v2.fa')
         index_seq_dict = _parse_index_fasta(random_index_fasta_path)
         index_name_dict = {v: k for k, v in index_seq_dict.items()}
         stat_list = []
@@ -74,7 +72,6 @@ rule summary_demultiplex:
                                 'index_name': 'IndexName',
                                 'uid': 'UID'},inplace=True)
         df_cell['CellBarcodeRate'] = df_cell['CellInputReadPairs'] / df_cell['MultiplexedTotalReadPairs']
-        df_cell['BarcodeVersion'] = barcode_version
         df_cell.to_csv(output.csv)
         if os.path.exists(os.path.join(outdir,"fastq_info.txt")):
             os.remove(os.path.join(outdir,"fastq_info.txt"))
@@ -104,9 +101,9 @@ rule run_demultiplex: #{prefixes}-{plates}-{multiplex_groups}-{primer_names}_{pn
         stats_out = outdir+"/{uid}/demultiplex.stats.txt", # old_uid
 
     params:
-        random_index_fa=lambda wildcards: os.path.join(PACKAGE_DIR, 'files', 'random_index_v1.fa') if barcode_version == "V1" \
-		                            else os.path.join(PACKAGE_DIR, 'files', 'random_index_v2', 'random_index_v2.multiplex_group_' + wildcards.uid.split('-')[-2] + '.fa') if barcode_version == "V2" \
-		                            else os.path.join(PACKAGE_DIR, 'files', 'random_index_v2', 'random_index_v2.fa'),
+        # V2-single: use full 384 index fa; V2 standard: use per-multiplex-group fa
+        random_index_fa=lambda wildcards: os.path.join(PACKAGE_DIR, 'files', 'random_index_v2', 'random_index_v2.fa') if v2_single \
+                                    else os.path.join(PACKAGE_DIR, 'files', 'random_index_v2', 'random_index_v2.multiplex_group_' + wildcards.uid.split('-')[-2] + '.fa'),
         outdir=lambda wildcards: outdir+f"/{wildcards.uid}/demultiplex",
         R1=lambda wildcards: outdir+f"/{wildcards.uid}/demultiplex/{'{{name}}'}-R1.fq.gz",
         R2=lambda wildcards: outdir+f"/{wildcards.uid}/demultiplex/{'{{name}}'}-R2.fq.gz"
@@ -121,8 +118,8 @@ rule run_demultiplex: #{prefixes}-{plates}-{multiplex_groups}-{primer_names}_{pn
         os.remove(input.R1)
         os.remove(input.R2)
 
-        #parse demultiplex.stats.txt for cell_qc
-        random_index_fasta_path = os.path.join(PACKAGE_DIR,'files','random_index_v1.fa') if barcode_version == 'V1' else os.path.join(PACKAGE_DIR,'files','random_index_v2','random_index_v2.fa')
+        # parse demultiplex.stats.txt for cell_qc
+        random_index_fasta_path = os.path.join(PACKAGE_DIR,'files','random_index_v2','random_index_v2.fa')
         index_seq_dict = _parse_index_fasta(random_index_fasta_path)
         index_name_dict = {v: k for k, v in index_seq_dict.items()}
         single_df = _read_cutadapt_result(output.stats_out)

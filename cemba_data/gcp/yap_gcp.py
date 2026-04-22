@@ -7,22 +7,19 @@ from cemba_data.mapping.pipelines import make_all_snakefile, prepare_run
 from snakemake.io import glob_wildcards
 
 PACKAGE_DIR = cemba_data.__path__[0]
-from cemba_data.demultiplex.fastq_dataframe import _parse_v2_fastq_path
+from cemba_data.demultiplex.fastq_dataframe import _parse_fastq_path
 from cemba_data.demultiplex import _parse_index_fasta
 
 
-def make_v2_fastq_df(fq_dir):
+def make_fastq_df(fq_dir):
 	"""
-	Create a DataFrame for V2 FASTQ files in a local directory.
+	Create a DataFrame for FASTQ files in a local directory.
 	"""
 	print(f"Scanning directory: {fq_dir}")
 	input_files = glob.glob(os.path.join(os.path.expanduser(fq_dir), "*.fastq.gz")) + \
 	              glob.glob(os.path.join(os.path.expanduser(fq_dir), "*.fq.gz"))
-	
-	R = []
-	for file in input_files:
-		R.append(_parse_v2_fastq_path(file))
-	df = pd.DataFrame(R)
+
+	df = pd.DataFrame([_parse_fastq_path(file) for file in input_files])
 	df.fastq_path = df.fastq_path.apply(lambda x: str(x))
 	return df
 
@@ -32,16 +29,15 @@ def get_fastq_info(fq_dir, local_outdir="./"):
 		os.makedirs(local_outdir, exist_ok=True)
 	outfile = os.path.join(local_outdir, "fastq_info.txt")
 	if os.path.exists(outfile):
-		df=pd.read_csv(outfile,sep='\t')
-		# need to write to file, otherwise, snakemake will call this function multiple times.
+		df = pd.read_csv(outfile, sep='\t')
 		return df
-	
-	df = make_v2_fastq_df(fq_dir)
+
+	df = make_fastq_df(fq_dir)
 	df = df.loc[df.read_type.isin(['R1', 'R2'])]
 	if df.groupby(['lane', 'read_type'])['uid'].nunique().nunique() != 1:
 		print("Warning: number of uids (or fastq files) are different.")
 		print(df.groupby(['lane', 'read_type'])['uid'].nunique())
-	
+
 	df = df.loc[df.read_type == 'R1']
 	df.rename(columns={'fastq_path': 'R1'}, inplace=True)
 	df['R2'] = df.R1.apply(lambda x: x.replace('_R1_', '_R2_'))
@@ -56,20 +52,20 @@ def index_name2multiplex_group(x):
 	else:
 		return 'NA'
 
-def get_lanes_info(outdir,barcode_version):
+def get_lanes_info(outdir):
 	#  uid={plate}-{multiplex_group}-{primer_name}
 	if os.path.exists("lane_info.txt"):
 		df1 = pd.read_csv("lane_info.txt", sep='\t')
 		df1.fastq_path = df1.fastq_path.apply(lambda x: eval(x))
 		return df1
-	
+
 	uids, plates, multiple_groups, primer_names, lanes, index_names, read_types = glob_wildcards(
 		os.path.join(outdir, "{uid}/lanes/{plate}-{multiplex_group}-{primer_name}-{lane}-{index_name}-{read_type}.fq.gz"))
 	
 	if len(uids) == 0:
 		print("Run demultiplex.smk first, then run merge_lanes.smk !")
 		return None
-	
+
 	df = pd.DataFrame.from_dict({
 		'uid': uids,
 		'plate': plates,
@@ -79,69 +75,67 @@ def get_lanes_info(outdir,barcode_version):
 		'index_name': index_names,
 		'read_type': read_types
 	}).drop_duplicates()
-	
+
 	df['fastq_path'] = df.apply(
 		lambda row: os.path.join(outdir, row.uid, "lanes", '-'.join(
 			row.loc[['uid', 'lane', 'index_name', 'read_type']].map(str).tolist()) + ".fq.gz"), axis=1)
-	
-	if barcode_version == 'V2' and df['multiplex_group'].nunique() == 1:
-		df['real_multiplex_group'] = df.index_name.apply(
-			lambda x: ((int(x[1:]) - 1) % 12) // 2 + 1 if 'unknow' not in x.lower() else 'NA'
-		)
+
+	# V2: if all FASTQs have the same multiplex group in filename (single multiplex group experiment),
+	# derive multiplex group from index name.
+	# Otherwise multiplex group is already correct in the filename (Ecker lab standard 6-group design).
+	if df['multiplex_group'].nunique() == 1:
+		df['real_multiplex_group'] = df.index_name.apply(index_name2multiplex_group)
 	else:
-		df['real_multiplex_group']=df.multiplex_group.tolist()
-	df=df.loc[df.real_multiplex_group !='NA']
+		df['real_multiplex_group'] = df.multiplex_group.tolist()
+	df = df.loc[df.real_multiplex_group != 'NA']
+
 	# new uid (real uid)
-	df['uid']= df.plate.map(str)+'-'+df.real_multiplex_group.map(str)+'-'+df.primer_name.map(str) #{plate}-{multiplex_group}-{primer_name}
+	df['uid'] = df.plate.map(str) + '-' + df.real_multiplex_group.map(str) + '-' + df.primer_name.map(str)
 
 	# Put multiple lanes fastq into one list
 	df1 = df.loc[:, ['uid', 'index_name', 'read_type',
-					 'fastq_path']].groupby(
-		['uid', 'index_name', 'read_type'],as_index=False).agg(lambda x: x.tolist())
-	df1.to_csv("lane_info.txt",sep='\t',index=False)
+	                 'fastq_path']].groupby(
+		['uid', 'index_name', 'read_type'], as_index=False).agg(lambda x: x.tolist())
+	df1.to_csv("lane_info.txt", sep='\t', index=False)
 	return df1
 
-def get_random_index(UIDs, barcode_version,local_outdir="./"):
+def get_random_index(UIDs, local_outdir="./"):
 	if not os.path.exists(local_outdir):
-		os.makedirs(local_outdir,exist_ok=True)
+		os.makedirs(local_outdir, exist_ok=True)
 	outfile = os.path.join(local_outdir, "random_index.txt")
 	if os.path.exists(outfile):
-		df_index=pd.read_csv(outfile,sep='\t')
+		df_index = pd.read_csv(outfile, sep='\t')
 		return df_index
-	R=[]
+
+	R = []
 	for uid in UIDs:
-		random_index_fa = os.path.join(PACKAGE_DIR, 'files', 'random_index_v1.fa') if barcode_version == "V1" \
-			else os.path.join(PACKAGE_DIR, 'files', 'random_index_v2',
-			                  'random_index_v2.multiplex_group_' + uid.split('-')[-2] + '.fa') if barcode_version == "V2" \
-			else os.path.join(PACKAGE_DIR, 'files', 'random_index_v2', 'random_index_v2.fa')
-		
+		multiplex_group = uid.split('-')[-2]
+		random_index_fa = os.path.join(PACKAGE_DIR, 'files', 'random_index_v2',
+		                               f'random_index_v2.multiplex_group_{multiplex_group}.fa')
 		index_seq_dict = _parse_index_fasta(random_index_fa)
-		index_names=list(index_seq_dict.keys()) #384 random index names (A-P, 1-24)
+		index_names = list(index_seq_dict.keys())
 		for index_name in index_names:
-			for read_type in ['R1','R2']:
-				R.append([uid,read_type,index_name])
-	df_index=pd.DataFrame(R,columns=['uid','read_type','index_name'])
-	df_index.rename(columns={'uid':'old_uid'},inplace=True)
-	df_index['real_multiplex_group']=df_index.index_name.apply(index_name2multiplex_group)
-	df_index['uid']=df_index.loc[:,['old_uid','real_multiplex_group']].apply(
-		lambda x:'-'.join([x.old_uid.split('-')[0],str(x.real_multiplex_group),x.old_uid.split('-')[-1]]),axis=1
-	)
+			for read_type in ['R1', 'R2']:
+				R.append([uid, read_type, index_name])
+
+	df_index = pd.DataFrame(R, columns=['uid', 'read_type', 'index_name'])
+	df_index.rename(columns={'uid': 'old_uid'}, inplace=True)
+	df_index['real_multiplex_group'] = df_index.index_name.apply(index_name2multiplex_group)
+	df_index['uid'] = df_index.loc[:, ['old_uid', 'real_multiplex_group']].apply(
+		lambda x: '-'.join([x.old_uid.split('-')[0], str(x.real_multiplex_group), x.old_uid.split('-')[-1]]), axis=1)
 	df_index['cell_id'] = df_index['uid'] + '-' + df_index['index_name']
 	df_index.to_csv(outfile, sep='\t', index=False)
 	return df_index
 
 
-def run_demultiplex(fq_dir="fastq", outdir="test",
-                    barcode_version="V2",
-                    n_jobs=16, print_only=False):
+def run_demultiplex(fq_dir="fastq", outdir="test", n_jobs=16, print_only=False):
 	"""
 	Run demultiplex on local machine.
 	"""
 	smk1 = os.path.join(PACKAGE_DIR, 'files/smk/demultiplex.smk')
 	cmd = f'snakemake -s {smk1} --scheduler greedy --printshellcmds --rerun-incomplete ' \
-	      f'--config fq_dir="{fq_dir}" outdir="{outdir}" ' \
-	      f'barcode_version="{barcode_version}" -j {n_jobs}'
-	
+	      f'--config fq_dir="{fq_dir}" outdir="{outdir}" -j {n_jobs}'
+
 	print(cmd)
 	if not print_only:
 		os.system(cmd)

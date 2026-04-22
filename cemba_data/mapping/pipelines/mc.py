@@ -20,7 +20,6 @@ def mc_config_str(config):
 
     str_parameters = {
         'mode': 'mc',
-        'barcode_version': 'required',
         'r1_adapter': 'AGATCGGAAGAGCACACGTCTGAAC',
         'r2_adapter': 'AGATCGGAAGAGCGTCGTGTAGGGA',
         'hisat3n_dna_reference': 'required',

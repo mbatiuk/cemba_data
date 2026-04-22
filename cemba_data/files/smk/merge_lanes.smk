@@ -15,9 +15,7 @@ for key in default_config:
         config[key]=default_config[key]
 
 outdir=config.get("outdir","mapping")
-barcode_version = config.get("barcode_version","V2")
-
-df_lane=get_lanes_info(outdir,barcode_version)
+df_lane=get_lanes_info(outdir)
 df_lane['fastq_out'] = df_lane.apply(lambda row:os.path.join(outdir, row.uid, "fastq", '-'.join(row.loc[['uid', 'index_name', 'read_type']].map(str).tolist()) + ".fq.gz"), axis=1)
 if df_lane is None:
     print("Merging is already done.")

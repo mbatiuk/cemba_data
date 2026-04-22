@@ -131,11 +131,6 @@ def snakemake(workdir, snakefile, cores):
     return
 
 
-def get_barcode_version(output_dir):
-    fastq_dir = pathlib.Path(output_dir) / 'fastq'
-    with open(fastq_dir / '.barcode_version') as f:
-        return f.read()
-
 
 def get_mode(output_dir):
     fastq_dir = pathlib.Path(output_dir) / 'fastq'

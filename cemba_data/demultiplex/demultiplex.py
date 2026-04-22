@@ -19,7 +19,7 @@ log.addHandler(logging.NullHandler())
 PACKAGE_DIR = pathlib.Path(cemba_data.__path__[0])
 
 
-def _demultiplex(fastq_pattern, output_dir, barcode_version, cpu):
+def _demultiplex(fastq_pattern, output_dir, cpu):
 	"""
 	Input raw FASTQ file pattern
 	1. automatically parse the name to generate fastq dataframe
@@ -32,30 +32,23 @@ def _demultiplex(fastq_pattern, output_dir, barcode_version, cpu):
 	----------
 	fastq_pattern
 	output_dir
-	barcode_version
 	cpu
 
 	Returns
 	-------
-
+	bool: True if V2-single mode (single multiplex group per plate)
 	"""
 	output_dir = pathlib.Path(output_dir).absolute()
 
 	# make fastq dataframe
 	fastq_df = make_fastq_dataframe(fastq_pattern,
-									barcode_version=barcode_version,
 									output_path=output_dir / 'stats' /
 												'fastq_dataframe.csv')
 
-	# judge the type of V2 barcoding
-	if (barcode_version == 'V2') and (fastq_df['multiplex_group'].unique().size == 1):
-		# in this case, the six multiplex group is indexed by a single PCR index
-		print(
-			'Detect only single multiplex group in each plate, will use V2-single mode.'
-		)
-		barcode_version = 'V2-single'
-		# the resulting demultiplexed dir will have all the 384 cells.
-		# I added a patch in the end to split them into multiplex groups that each sub-dir only contain 64 cells.
+	# detect single multiplex group experiment
+	v2_single = fastq_df['multiplex_group'].unique().size == 1
+	if v2_single:
+		print('Detect only single multiplex group in each plate, will use V2-single mode.')
 
 	# prepare UID sub dir
 	snakefile_list = []
@@ -63,20 +56,14 @@ def _demultiplex(fastq_pattern, output_dir, barcode_version, cpu):
 	rule_count = 0
 	for uid, uid_df in fastq_df.groupby('uid'):
 		# determine index file path
-		if barcode_version == 'V1':
+		if v2_single:
 			random_index_fasta_path = str(PACKAGE_DIR /
-										  'files/random_index_v1.fa')
-		elif barcode_version == 'V2':
+										  'files/random_index_v2/random_index_v2.fa')
+		else:
 			multiplex_group = uid.split('-')[-2]
 			random_index_fasta_path = str(
 				PACKAGE_DIR / 'files/random_index_v2/'
 							  f'random_index_v2.multiplex_group_{multiplex_group}.fa')
-		elif barcode_version == 'V2-single':
-			random_index_fasta_path = str(PACKAGE_DIR /
-										  'files/random_index_v2/'
-										  f'random_index_v2.fa')
-		else:
-			raise ValueError(f'Got unknown barcode version {barcode_version}.')
 
 		# create a directory for each uid, within this UID, do multiplex and lane merge
 		uid_output_dir = output_dir / uid
@@ -120,7 +107,7 @@ rule demultiplex_{rule_count}:
 	shell:
 		"cutadapt -Z -e 0.01 --no-indels -g file:{random_index_fasta_path} "
 		"-o {{params.r1_out}} -p {{params.r2_out}} {{input.r1_in}} {{input.r2_in}} > {{output.stats_out}}"
-	"""
+"""
 			rule_count += 1
 			rules += snake_file_template
 
@@ -144,7 +131,7 @@ rule final:
 
 	print('Demultiplexing raw FASTQ')
 	snakemake(workdir=output_dir, snakefile=final_snake_path, cores=cpu)
-	return barcode_version
+	return v2_single
 
 
 def _merge_lane(output_dir, cpu):
@@ -169,7 +156,7 @@ def _merge_lane(output_dir, cpu):
 			records.append([cell_id, lane, read_type, str(path)])
 		cell_fastq_df = pd.DataFrame(
 			records,
-			columns=['cell_id', 'index_name', 'read_type', 'fastq_path'])
+			columns=['cell_id', 'lane', 'read_type', 'fastq_path'])
 
 		# prepare snakefile for each cell_id * read_type
 		rules = ''
@@ -263,24 +250,13 @@ def _read_cutadapt_result(stat_path):
 	return total_df
 
 
-def _summarize_demultiplex(output_dir, barcode_version):
+def _summarize_demultiplex(output_dir):
 	output_dir = pathlib.Path(output_dir).absolute()
 	output_path = output_dir / 'stats' / 'demultiplex.stats.csv'
-	barcode_version = barcode_version.upper()
 
-	# get index info
-	if barcode_version == 'V1':
-		random_index_fasta_path = str(PACKAGE_DIR / 'files/random_index_v1.fa')
-	elif barcode_version == 'V2':
-		# here we don't need to worry about the multiplex_group issue,
-		# because we just need a index_name to index_seq map
-		# we've considered this during demultiplex
-		random_index_fasta_path = str(
-			PACKAGE_DIR / 'files/random_index_v2/random_index_v2.fa')
-	else:
-		raise ValueError(
-			f'Unknown version name {barcode_version} in multiplexIndex section of the config file.'
-		)
+	# V2 only — use full random index fasta for index_name lookup
+	random_index_fasta_path = str(
+		PACKAGE_DIR / 'files/random_index_v2/random_index_v2.fa')
 	index_seq_dict = _parse_index_fasta(random_index_fasta_path)
 	index_name_dict = {v: k for k, v in index_seq_dict.items()}
 
@@ -305,25 +281,19 @@ def _summarize_demultiplex(output_dir, barcode_version):
 											 'uid'] + '-' + total_demultiplex_stats['index_name']
 
 	cell_table = total_demultiplex_stats.groupby('cell_id').agg({
-		'Trimmed':
-			'sum',
-		'TotalPair':
-			'sum',
-		'index_name':
-			lambda i: i.unique()[0],
-		'uid':
-			lambda i: i.unique()[0]
+		'Trimmed': 'sum',
+		'TotalPair': 'sum',
+		'index_name': lambda i: i.unique()[0],
+		'uid': lambda i: i.unique()[0]
 	})
 	cell_table.rename(columns={
 		'Trimmed': 'CellInputReadPairs',
 		'TotalPair': 'MultiplexedTotalReadPairs',
 		'index_name': 'IndexName',
 		'uid': 'UID'
-	},
-		inplace=True)
+	}, inplace=True)
 	cell_table['CellBarcodeRate'] = cell_table[
 										'CellInputReadPairs'] / cell_table['MultiplexedTotalReadPairs']
-	cell_table['BarcodeVersion'] = barcode_version
 	cell_table.to_csv(output_path)
 	return
 
@@ -426,7 +396,7 @@ def _reformat_v2_single(output_dir):
 SUPPORTED_TECHNOLOGY = ['mc', 'mct', 'm3c']
 
 
-def demultiplex_pipeline(fastq_pattern, output_dir, config_path, cpu, aligner):
+def demultiplex_pipeline(fastq_pattern, output_dir, config_path, cpu):
 	cpu = int(cpu)
 	merge_cpu = min(48, cpu)
 	demultiplex_cpu = min(32, cpu)
@@ -440,26 +410,22 @@ def demultiplex_pipeline(fastq_pattern, output_dir, config_path, cpu, aligner):
 		output_dir.mkdir(parents=True)
 		(output_dir / 'stats').mkdir()
 
-	config = get_configuration(config_path)
 	suffix = pathlib.Path(config_path).name.split('.')[-1]
 	new_config_path = output_dir / f'mapping_config.{suffix}'
 	subprocess.run(f'cp {config_path} {new_config_path}',
 				   shell=True,
 				   check=True)
-	barcode_version = config['barcode_version']
 
 	# validate config file first before demultiplex
 	validate_mapping_config(output_dir)
 
-	demultiplex_version = _demultiplex(fastq_pattern=fastq_pattern,
-									   output_dir=output_dir,
-									   barcode_version=barcode_version,
-									   cpu=demultiplex_cpu)
+	v2_single = _demultiplex(fastq_pattern=fastq_pattern,
+							 output_dir=output_dir,
+							 cpu=demultiplex_cpu)
 	_merge_lane(output_dir=output_dir, cpu=merge_cpu)
-	_summarize_demultiplex(output_dir=output_dir,
-						   barcode_version=barcode_version)
+	_summarize_demultiplex(output_dir=output_dir)
 	_final_cleaning(output_dir=output_dir)
-	if demultiplex_version == 'V2-single':
+	if v2_single:
 		print('Reformat directories to separate multiplex groups')
 		_reformat_v2_single(output_dir=output_dir)
 	_skip_abnormal_fastq_pairs(output_dir=output_dir)

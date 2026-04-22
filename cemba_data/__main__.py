@@ -244,14 +244,6 @@ def print_plate_info_register_subparser(subparser):
 								  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 								  help="Print out default plate info template.")
 
-	parser.add_argument(
-		"--barcode_version", '-v', '-V',
-		type=str,
-		default='V2',
-		choices=['V1', 'V2'],
-		help="Use V1 template for 8-random-index library version, "
-			 "Use V2 template for 384-random-index library version."
-	)
 	return
 
 
@@ -362,19 +354,9 @@ def print_default_config_register_subparser(subparser):
 	)
 
 	parser.add_argument(
-		"--barcode_version",
-		'-v',
-		'-V',
-		type=str,
-		required=True,
-		choices=['V1', 'V2'],
-		help="Barcode version, V1 for 8 random index, V2 for 384 random index"
-	)
-
-	parser.add_argument(
 		"--hisat3n_dna_ref",
 		type=str,
-		required=False,
+		required=True,
 		help="Path to the hisat-3n DNA reference"
 	)
 
@@ -403,10 +385,9 @@ def print_default_config_register_subparser(subparser):
 	parser.add_argument(
 		"--chrom_size_path",
 		type=str,
-		required=False,
-		help="[m3c only] Path to the chrom size file, "
-			 "only chromosomes occur in this file will be considered in generating chromatin contacts, "
-			 "required if mode is mct"
+		required=True,
+		help="Path to the chrom size file. "
+			 "Only chromosomes in this file will be considered."
 	)
 
 	parser.add_argument(

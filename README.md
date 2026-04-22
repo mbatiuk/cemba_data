@@ -1,3 +1,15 @@
+# Description
+
+This is an independent fork of cemba_data to map single cell DNA methylation and multiome data generated with snmc-type technology from J. Ecker lab
+
+Original code is from https://github.com/DingWB/cemba_data and https://github.com/lhqing/cemba_data
+
+Code was significantly trimmed and refactored, bug fixes were introduced
+
+To increase simplicity legacy code focused on V1 barcoding, bismark mapping and cloud integration were dropped
+
+This is local-only implementation based on hisat3n mapping
+
 # Installation
 ## Create environment and install
 ```shell
@@ -8,17 +20,14 @@ conda config --add channels conda-forge
 
 mamba env create -f https://raw.githubusercontent.com/mbatiuk/cemba_data/master/yap.yaml
 
-# if failed, try:
-# mamba env create -f https://raw.githubusercontent.com/mbatiuk/cemba_data/master/env_greedy.yaml
 conda activate yap
 
-# conda env export > env_greedy.yaml
 ```
-## To install this latest version:
+## To install this fork of cemba_data:
 ```shell
 pip install git+https://github.com/mbatiuk/cemba_data
 
-# reinstall
+# reinstall after update on github
 pip uninstall -y cemba_data && pip install git+https://github.com/mbatiuk/cemba_data
 
 ```
@@ -55,76 +64,86 @@ hisat-3n-build --base-change C,T --repeat-index --ss genome.ss --exon genome.exo
 hisat2-build -p 16 genome.fa genome
 ```
 
-# Documentation
-## Make sure create the right environment
+# Usage
+
 
 ## Generate config.ini
 ```shell
-# m3c
-yap default-mapping-config --mode m3c --barcode_version V2 --bismark_ref "~/Ref/mm10/mm10_ucsc_with_chrL.bismark1" --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" --hisat3n_dna_ref  "~/Ref/mm10/mm10_ucsc_with_chrL" > m3c_config.ini
+# m3c - DNA methylation+ 3C
+yap default-mapping-config --mode m3c --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" --hisat3n_dna_ref  "~/Ref/mm10/mm10_ucsc_with_chrL" > m3c_config.ini
 
-#mC
-yap default-mapping-config --mode mc --barcode_version V2 --bismark_ref "~/Ref/mm10/mm10_ucsc_with_chrL.bismark1" --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" --hisat3n_dna_ref  "~/Ref/mm10/mm10_ucsc_with_chrL" > mc_config.ini
-# pay attention to the path of reference, should be the same as on the GCP if you are going to run the pipeline on GCP.    
+# mc - DNA methylation
+yap default-mapping-config --mode mc --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" --hisat3n_dna_ref  "~/Ref/mm10/mm10_ucsc_with_chrL" > mc_config.ini
 
-# mct
-# bismark & STAR for mct (bowtie2)
-yap default-mapping-config --mode mct --barcode_version V2 --bismark_ref "~/Ref/mm10/mm10_ucsc_with_chrL.bismark2" --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" --gtf "~/Ref/mm10/annotations/gencode.vM23.annotation.gtf" --star_ref "~/Ref/mm10/star_ref" > mct_config.ini
+# mct - DNA methylation + RNA
+yap default-mapping-config --mode mct --hisat3n_dna_ref "~/Ref/mm10/mm10_ucsc_with_chrL" --hisat3n_rna_ref "~/Ref/mm10/mm10_ucsc_with_chrL" --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" --gtf "~/Ref/mm10/annotations/gencode.vM23.annotation.gtf" > mct_config.ini
 
-# hisat-3n for mct    
-yap default-mapping-config --mode mct --barcode_version V2 --hisat3n_dna_ref "~/Ref/mm10/mm10_ucsc_with_chrL" --hisat3n_rna_ref "~/Ref/mm10/mm10_ucsc_with_chrL" --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" --gtf "~/Ref/mm10/annotations/gencode.vM23.annotation.gtf" > mct_config.ini
+# mc nome - DNA methylation + NOMe
+yap default-mapping-config --mode mc --nome \
+    --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" \
+    --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" \
+    --hisat3n_dna_ref "~/Ref/mm10/mm10_ucsc_with_chrL" > mc_nome_config.ini
+
+# mc-multi - multi-mapping reads retained during mc
+yap default-mapping-config --mode mc-multi \
+    --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" \
+    --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" \
+    --hisat3n_dna_ref "~/Ref/mm10/mm10_ucsc_with_chrL" > mc_multi_config.ini
+
+# mct-multi - multi-mapping reads retained during mct
+yap default-mapping-config --mode mct-multi \
+    --genome "~/Ref/mm10/mm10.fa" \
+    --hisat3n_dna_ref "~/Ref/mm10/dna_index" \
+    --hisat3n_rna_ref "~/Ref/mm10/rna_index" \
+    --gtf "~/Ref/mm10/annotation.gtf" \
+    --chrom_size_path "~/Ref/mm10/mm10.sizes" > mct_multi_config.ini
+
+# Attention, --hisat3n_dna_ref expects prefix of each hisat genome file, not the directory path
+# Like directory ~/genomes/mus/hisat/ contains hisat.3n.CT.1.ht2 hisat.3n.CT.2.ht2 ...
+# You need to put --hisat3n_dna_ref "~/genomes/mus/hisat/hisat"
 ```
+### Supported Modalities
+
+Pipeline supports the following modalities. Note that NOMe variants are invoked by adding the `--nome` flag to the base mode during configuration generation.
+
+| Modality | Configuration Command |
+| :--- | :--- |
+| **`m3c`** | `yap default-mapping-config --mode m3c ...` |
+| **`m3c-multi`** | `yap default-mapping-config --mode m3c-multi ...` |
+| **`mc-nome`** | `yap default-mapping-config --mode mc --nome ...` |
+| **`mc-multi`** | `yap default-mapping-config --mode mc-multi ...` |
+| **`mct-nome`** | `yap default-mapping-config --mode mct --nome ...` |
+| **`mct-multi`** | `yap default-mapping-config --mode mct-multi ...` |
 
 ## Demultiplex
 ```shell
-# m3c
-yap demultiplex --fastq_pattern "Pool_Remind1_m3c/*.fastq.gz" -o mapping/Pool_Remind1_m3c -j 16 --aligner hisat3n --config_path m3c_config.ini
-# or
- yap-gcp run_demultiplex --fq_dir="Pool_Remind1_m3c" --outdir="mapping/Pool_Remind1_m3c" --n_jobs=16 --print_only=True 
- 
-# mc
- yap-gcp run_demultiplex --fq_dir="Pool_Remind1_mC" --outdir="mapping/Pool_Remind1_mC" --n_jobs=16 --print_only=True 
+# Old yap pipeline, m3c
+yap demultiplex --fastq_pattern "Pool_Remind1_m3c/*.fastq.gz" -o your_cell_level_directory -j 16 --config_path m3c_config.ini
+
+# New yap-gcp, m3c
+ yap-gcp run_demultiplex --fq_dir="Pool_Remind1_m3c" --outdir="your_cell_level_directory" --n_jobs=16 --print_only=True
 ```
 
 ## Run mapping
 ```shell
-sh mapping/snakemake/qsub/snakemake_cmd.txt # old yap pipeline
 
-# or new yap-gcp pipeline
-yap-gcp run_mapping --workd="your_cell_level_directory" --config_path="m3c_config.ini" --aligner='hisat-3n' --n_jobs=62 --total_memory_gb=400 --qos="serial" --conda_base="mamba" --print_only=True
+# generate snakemake, sbatch and qsub scripts to start the mapping
+yap-gcp run_mapping --workd="your_cell_level_directory" --config_path="m3c_config.ini" --n_jobs=62 --total_memory_gb=400 --qos="serial" --conda_base="mamba" --print_only=True
 #--n_jobs - amount of parallel jobs and requested cpu cores if run using sbatch
 #--qos - QOS option passed to sbatch script if run on HPC. This is HPC dependent
 #--conda_base - type of conda installation if run using sbatch
 # Accepted values are "mamba", "mambaforge", "conda", "miniconda", "anaconda", "miniforge", "miniforge3"
 # If loaded as a module on HPC specify "module <module_name>", e.g. "module mamba"
 # You can also provide custom path to your conda installation e.g. "/custom/path/to/conda.sh"
+#--print_only=True - writes snakemake, sbatch and qsub scripts into your_cell_level_directory/snakemake/
+#--print_only=False - run mapping interactively in current shell
 
-# or bismark
-yap-gcp run_mapping --workd="mapping" --config_path="m3c_config.ini" --aligner='bismark' --n_jobs=64 --print_only=True
-sh mapping/snakemake/qsub/snakemake_cmd.txt
+# run the mapping from generate script files
+bash your_cell_level_directory/snakemake/qsub/snakemake_cmd.txt
+bash your_cell_level_directory/snakemake/sbatch/sbatch.sh
+
+
 ```
 
-## Workflow
+# Workflow
 <img src="doc/files/snm3c_dag.svg" title="DAG for snm3c" width="800px">
-
-### (5) yap vs yap-gcp: example on m3c
-```shell
-# generate config.ini; bismark
-yap default-mapping-config --mode m3c --barcode_version V2 --bismark_ref "~/Ref/hg38/hg38_ucsc_with_chrL.bismark1" --genome " ~/Ref/hg38/hg38_ucsc_with_chrL.fa" --chrom_size_path " ~/Ref/hg38/hg38_ucsc.nochrM.sizes" > m3c_config.ini
-# hisat3n
-yap default-mapping-config --mode m3c --barcode_version V2 --hisat3n_dna_ref  "~/Ref/hg38/hg38_ucsc_with_chrL" --genome " ~/Ref/hg38/hg38_ucsc_with_chrL.fa" --chrom_size_path " ~/Ref/hg38/hg38_ucsc.nochrM.sizes" > m3c_hisat3n_config.ini
-
-# (1). old yap pipeline
-## demultiplex
-yap demultiplex --fastq_pattern "/gale/raidix/rdx-2/illumina_runs/240322_M00412_0796_000000000-GK7K5_240325081847048305907-1/SALK054/*.fastq.gz" -o mapping -j 16 --aligner bismark --config_path m3c_config.ini #/usr/bin/time -f "%e\t%M\t%P" ;  2125.33 500364  195%
-# elapsed real time (wall clock) in seconds; maximum resident set size in KB;  percent of CPU this job got
-## mapping
-sh mapping/snakemake/qsub/snakemake_cmd.txt
-# /usr/bin/time -f "%e\t%M\t%P" UWA7648_CX2324_THM1_3_P12-2-N8 ; run one uid, 16 cpus; 4514.82 3393988 367%
-
-# (2). new yap-gcp pipeline, run on local HPC (faster)
-yap-gcp run_demultiplex --fq_dir=" /gale/raidix/rdx-2/illumina_runs/240322_M00412_0796_000000000-GK7K5_240325081847048305907-1/SALK054/" --outdir="mapping" --n_jobs=16
-# time and memory usage: 69.52   282008  754%; 30X faster
-yap-gcp run_mapping --workd="mapping" --config_path="m3c_config.ini" --aligner='bismark' --n_jobs=64 --print_only=True
-sh mapping/snakemake/qsub/snakemake_cmd.txt
-```

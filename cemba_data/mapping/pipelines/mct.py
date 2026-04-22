@@ -26,20 +26,19 @@ def mct_config_str(config):
 
     str_parameters = {
         'mode': 'mct',
-        'barcode_version': 'required',
         'r1_adapter': 'AGATCGGAAGAGCACACGTCTGAAC',
         'r2_adapter': 'AGATCGGAAGAGCGTCGTGTAGGGA',
         'hisat3n_dna_reference': 'required',
         'hisat3n_rna_reference': 'required',
         'hisat3n_repeat_index_type': 'no-repeat',
         'reference_fasta': 'required',
-		'chrom_size_path': 'required',
+        'chrom_size_path': 'required',
         'gtf_path': 'required',
         'feature_type': 'gene',
         'id_type': 'gene_id',
         'nome_flag_str': 'required',
-		'mc_stat_feature': 'CHN CGN CCC',
-		'mc_stat_alias': 'mCH mCG mCCC',
+        'mc_stat_feature': 'CHN CGN CCC',
+        'mc_stat_alias': 'mCH mCG mCCC',
         'annotation_path': None
     }
     typed_config = {}
