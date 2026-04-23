@@ -80,7 +80,7 @@ hisat2-build -p 16 genome.fa hisat_rna
 ### m3c - DNA methylation+ 3C
 ```shell
 yap default-mapping-config --mode m3c \
-    --genome "~/genomes/mus/mm10_ucsc_with_chrL.fa" \
+    --genome "~/genomes/mus/mm10_chrL.fa.fa" \
     --chrom_size_path "~/genomes/mus/mm10.sizes" \
     --hisat3n_dna_ref  "~/genomes/mus/hisat/hisat" > m3c_config.ini
 ```
@@ -88,7 +88,7 @@ yap default-mapping-config --mode m3c \
 ### mc - DNA methylation
 ```shell
 yap default-mapping-config --mode mc \
-    --genome "~/genomes/mus/mm10_ucsc_with_chrL.fa" \
+    --genome "~/genomes/mus/mm10_chrL.fa.fa" \
     --chrom_size_path "~/genomes/mus/mm10.sizes" \
     --hisat3n_dna_ref  "~/genomes/mus/hisat/hisat" > mc_config.ini
 ```
@@ -98,7 +98,7 @@ yap default-mapping-config --mode mc \
 yap default-mapping-config --mode mct \
     --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" \
     --hisat3n_rna_ref "~/genomes/mus/hisat_rna/hisat" \
-    --genome "~/genomes/mus/mm10_ucsc_with_chrL.fa" \
+    --genome "~/genomes/mus/mm10_chrL.fa.fa" \
     --chrom_size_path "~/genomes/mus/mm10.sizes" \
     --gtf "~/genomes/mus/gencode.vM23.annotation.gtf" > mct_config.ini
 ```
@@ -106,7 +106,7 @@ yap default-mapping-config --mode mct \
 ### mc nome - DNA methylation + NOMe
 ```shell
 yap default-mapping-config --mode mc --nome \
-    --genome "~/genomes/mus/mm10_ucsc_with_chrL.fa" \
+    --genome "~/genomes/mus/mm10_chrL.fa.fa" \
     --chrom_size_path "~/genomes/mus/mm10.sizes" \
     --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" > mc_nome_config.ini
 ```
@@ -114,7 +114,7 @@ yap default-mapping-config --mode mc --nome \
 ### mc-multi - multi-mapping reads retained during mc
 ```shell
 yap default-mapping-config --mode mc-multi \
-    --genome "~/genomes/mus/mm10_ucsc_with_chrL.fa" \
+    --genome "~/genomes/mus/mm10_chrL.fa.fa" \
     --chrom_size_path "~/genomes/mus/mm10.sizes" \
     --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" > mc_multi_config.ini
 ```
@@ -122,7 +122,7 @@ yap default-mapping-config --mode mc-multi \
 ### mct-multi - multi-mapping reads retained during mct
 ```shell
 yap default-mapping-config --mode mct-multi \
-    --genome "~/genomes/mus/mm10.fa" \
+    --genome "~/genomes/mus/mm10_chrL.fa" \
     --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" \
     --hisat3n_rna_ref "~/genomes/mus/hisat_rna/hisat" \
     --gtf "~/genomes/mus/annotation.gtf" \
