@@ -1,6 +1,5 @@
 """
 Generate raw FASTQ dataframe based on fixed name pattern
-name pattern is based on samplesheet generated in plateinfo_and_samplesheet.py
 """
 import os
 import glob

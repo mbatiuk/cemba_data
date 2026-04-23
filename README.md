@@ -205,16 +205,16 @@ yap-gcp run_mapping --workd="your_cell_level_directory" \
 ## Library preparation
 384 random index primers are used, so each well on 384 well plates receives separate unique random index
 
-<img src="doc/files/molecularsteps.png" width="600px">
+<img src="doc/molecularsteps.png" width="600px">
 
 ## Version 2 barcoding strategy
 Please note 1 single PCR index primer can be used for the whole 384 well plate, in this case there will be only one multiplex group
-<img src="doc/files/v2barcode.png" width="800px">
+<img src="doc/v2barcode.png" width="800px">
 
 
 ## Library structure
-<img src="doc/files/library.png" width="300px">
+<img src="doc/library.png" width="300px">
 
 
 # Workflow of m3c run
-<img src="doc/files/snm3c_dag.svg" title="DAG for snm3c" width="800px">
+<img src="doc/snm3c_dag.svg" title="DAG for snm3c" width="800px">

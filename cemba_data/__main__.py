@@ -239,46 +239,6 @@ def sbatch_register_subparser(subparser):
 	return
 
 
-def print_plate_info_register_subparser(subparser):
-	parser = subparser.add_parser('default-plate-info',
-								  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-								  help="Print out default plate info template.")
-
-	return
-
-
-def make_sample_sheet_register_subparser(subparser):
-	parser = subparser.add_parser('make-sample-sheet',
-								  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-								  help="Print out default plate info template.")
-
-	parser_req = parser.add_argument_group("Required inputs")
-	parser_opt = parser.add_argument_group("Optional inputs")
-
-	parser_req.add_argument(
-		"--plate_info_path",
-		"-p",
-		type=str,
-		required=True,
-		help="Path of the plate information file."
-	)
-
-	parser_req.add_argument(
-		"--output_prefix",
-		"-o",
-		type=str,
-		required=True,
-		help="Output prefix, will generate 2 sample sheets, 1 for miseq, 1 for novaseq"
-	)
-
-	parser_opt.add_argument(
-		"--header_path",
-		type=str,
-		help="Path to the sample sheet header that contains sequencer info. Will use default if not provided."
-	)
-
-	return
-
 
 def demultiplex_register_subparser(subparser):
 	parser = subparser.add_parser('demultiplex',
@@ -764,8 +724,6 @@ def main():
 	qsub_register_subparser(subparsers)
 	sbatch_register_subparser(subparsers)
 	print_default_config_register_subparser(subparsers)
-	print_plate_info_register_subparser(subparsers)
-	make_sample_sheet_register_subparser(subparsers)
 	demultiplex_register_subparser(subparsers)
 	update_snakemake_register_subparser(subparsers)
 	start_from_cell_fastq_register_subparser(subparsers)
@@ -801,10 +759,6 @@ def main():
 		from cemba_data.qsub import qsub as func
 	elif cur_command == 'sbatch':
 		from cemba_data.sbatch import sbatch_submitter as func
-	elif cur_command == 'default-plate-info':
-		from .demultiplex import print_plate_info as func
-	elif cur_command == 'make-sample-sheet':
-		from .demultiplex import make_sample_sheet as func
 	elif cur_command == 'update-snakemake':
 		from .demultiplex import update_snakemake as func
 	elif cur_command == 'demultiplex':
