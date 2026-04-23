@@ -182,5 +182,21 @@ bash your_cell_level_directory/snakemake/sbatch/sbatch.sh
 yap-gcp run_mapping --workd="your_cell_level_directory" --config_path="m3c_config.ini" --n_jobs=14 --total_memory_gb=32 --print_only=False
 ```
 
+# Background on the library preparation and structure
+
+## Library preparation
+384 random index primers are used, so each well on 384 well plates receives separate unique random index
+
+<img src="doc/files/molecularsteps.png" width="600px">
+
+## Version 2 barcoding strategy
+Please note 1 single PCR index primer can be used for the whole 384 well plate, in this case there will be only one multiplex group
+<img src="doc/files/v2barcode.png" width="800px">
+
+
+## Library structure
+<img src="doc/files/library.png" width="300px">
+
+
 # Workflow of m3c run
 <img src="doc/files/snm3c_dag.svg" title="DAG for snm3c" width="800px">
