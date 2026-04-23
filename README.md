@@ -26,8 +26,8 @@ pip uninstall -y cemba_data && pip install git+https://github.com/mbatiuk/cemba_
 ```
 
 ## HISAT-3N Installation
-
-HISAT-3N is not available via conda and can be built from source:
+HISAT-3N documentation is available here: https://daehwankimlab.github.io/hisat2/hisat-3n/
+HISAT-3N can be built from source:
 ```shell
 git clone https://github.com/DaehwanKimLab/hisat2.git hisat-3n
 cd hisat-3n
