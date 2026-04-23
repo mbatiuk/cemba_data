@@ -54,21 +54,22 @@ source ~/.zshrc
 ### Non-repeat index
 
 ```bash
-hisat-3n-build --base-change C,T genome.fa genome
+hisat-3n-build --base-change C,T genome.fa hisat
 ```
 ### Repeat index
 ```shell
-hisat-3n-build --base-change C,T --repeat-index genome.fa genome
+hisat-3n-build --base-change C,T --repeat-index genome.fa hisat
 ```
 
 ### Repeat HISAT-3N integrated index with splice site information
 ```shell
-hisat-3n-build --base-change C,T --repeat-index --ss genome.ss --exon genome.exon genome.fa genome
+hisat-3n-build --base-change C,T --repeat-index \
+    --ss genome.ss --exon genome.exon genome.fa hisat
 ```
 
 ### Index for RNA
 ```shell
-hisat2-build -p 16 genome.fa genome
+hisat2-build -p 16 genome.fa hisat_rna
 ```
 
 # Usage
@@ -78,46 +79,57 @@ hisat2-build -p 16 genome.fa genome
 
 ### m3c - DNA methylation+ 3C
 ```shell
-yap default-mapping-config --mode m3c --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" --hisat3n_dna_ref  "~/Ref/mm10/mm10_ucsc_with_chrL" > m3c_config.ini
+yap default-mapping-config --mode m3c \
+    --genome "~/genomes/mus/mm10_ucsc_with_chrL.fa" \
+    --chrom_size_path "~/genomes/mus/mm10.sizes" \
+    --hisat3n_dna_ref  "~/genomes/mus/hisat/hisat" > m3c_config.ini
 ```
 
 ### mc - DNA methylation
 ```shell
-yap default-mapping-config --mode mc --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" --hisat3n_dna_ref  "~/Ref/mm10/mm10_ucsc_with_chrL" > mc_config.ini
+yap default-mapping-config --mode mc \
+    --genome "~/genomes/mus/mm10_ucsc_with_chrL.fa" \
+    --chrom_size_path "~/genomes/mus/mm10.sizes" \
+    --hisat3n_dna_ref  "~/genomes/mus/hisat/hisat" > mc_config.ini
 ```
 
 ### mct - DNA methylation + RNA
 ```shell
-yap default-mapping-config --mode mct --hisat3n_dna_ref "~/Ref/mm10/mm10_ucsc_with_chrL" --hisat3n_rna_ref "~/Ref/mm10/mm10_ucsc_with_chrL" --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" --gtf "~/Ref/mm10/annotations/gencode.vM23.annotation.gtf" > mct_config.ini
+yap default-mapping-config --mode mct \
+    --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" \
+    --hisat3n_rna_ref "~/genomes/mus/hisat_rna/hisat" \
+    --genome "~/genomes/mus/mm10_ucsc_with_chrL.fa" \
+    --chrom_size_path "~/genomes/mus/mm10.sizes" \
+    --gtf "~/genomes/mus/gencode.vM23.annotation.gtf" > mct_config.ini
 ```
 
 ### mc nome - DNA methylation + NOMe
 ```shell
 yap default-mapping-config --mode mc --nome \
-    --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" \
-    --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" \
-    --hisat3n_dna_ref "~/Ref/mm10/mm10_ucsc_with_chrL" > mc_nome_config.ini
+    --genome "~/genomes/mus/mm10_ucsc_with_chrL.fa" \
+    --chrom_size_path "~/genomes/mus/mm10.sizes" \
+    --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" > mc_nome_config.ini
 ```
 
 ### mc-multi - multi-mapping reads retained during mc
 ```shell
 yap default-mapping-config --mode mc-multi \
-    --genome "~/Ref/mm10/mm10_ucsc_with_chrL.fa" \
-    --chrom_size_path "~/Ref/mm10/mm10_ucsc.nochrM.sizes" \
-    --hisat3n_dna_ref "~/Ref/mm10/mm10_ucsc_with_chrL" > mc_multi_config.ini
+    --genome "~/genomes/mus/mm10_ucsc_with_chrL.fa" \
+    --chrom_size_path "~/genomes/mus/mm10.sizes" \
+    --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" > mc_multi_config.ini
 ```
 
 ### mct-multi - multi-mapping reads retained during mct
 ```shell
 yap default-mapping-config --mode mct-multi \
-    --genome "~/Ref/mm10/mm10.fa" \
-    --hisat3n_dna_ref "~/Ref/mm10/dna_index" \
-    --hisat3n_rna_ref "~/Ref/mm10/rna_index" \
-    --gtf "~/Ref/mm10/annotation.gtf" \
-    --chrom_size_path "~/Ref/mm10/mm10.sizes" > mct_multi_config.ini
+    --genome "~/genomes/mus/mm10.fa" \
+    --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" \
+    --hisat3n_rna_ref "~/genomes/mus/hisat_rna/hisat" \
+    --gtf "~/genomes/mus/annotation.gtf" \
+    --chrom_size_path "~/genomes/mus/mm10.sizes" > mct_multi_config.ini
 ```
 **Attention**, `--hisat3n_dna_ref` expects prefix of each hisat genome file, not the directory path.
-If genome index directory `~/genomes/mus/hisat/` contains files `hisat.3n.CT.1.ht2` `hisat.3n.CT.2.ht2` etc you need to specify `--hisat3n_dna_ref ~/genomes/mus/hisat/hisat` in the command.
+If genome index directory `~/genomes/mus/hisat/` contains files `hisat.3n.CT.1.ht2` `hisat.3n.CT.2.ht2` etc you need to specify `--hisat3n_dna_ref "~/genomes/mus/hisat/hisat"` in the command.
 
 Note that NOMe variants are invoked by adding the `--nome` flag to the base mode during configuration generation.
 
@@ -139,12 +151,14 @@ During NOMe variant the GCH contain open chromatin information, HCN contain norm
 
 ### Old yap pipeline
 ```shell
-yap demultiplex --fastq_pattern "Pool_Remind1_m3c/*.fastq.gz" -o your_cell_level_directory -j 16 --config_path m3c_config.ini
+yap demultiplex --fastq_pattern "Pool_Remind1_m3c/*.fastq.gz" \
+    -o your_cell_level_directory -j 16 --config_path m3c_config.ini
 ```
 
 ### New yap-gcp
 ```shell
- yap-gcp run_demultiplex --fq_dir="Pool_Remind1_m3c" --outdir="your_cell_level_directory" --n_jobs=16 --print_only=True
+ yap-gcp run_demultiplex --fq_dir="Pool_Remind1_m3c" \
+    --outdir="your_cell_level_directory" --n_jobs=16 --print_only=True
 ```
 
 ## Mapping
@@ -152,7 +166,9 @@ yap demultiplex --fastq_pattern "Pool_Remind1_m3c/*.fastq.gz" -o your_cell_level
 
 ### Generate snakemake, sbatch and qsub scripts to start the mapping
 ```shell
-yap-gcp run_mapping --workd="your_cell_level_directory" --config_path="m3c_config.ini" --n_jobs=62 --total_memory_gb=400 --qos="serial" --conda_base="mamba" --print_only=True
+yap-gcp run_mapping --workd="your_cell_level_directory" \
+    --config_path="m3c_config.ini" --n_jobs=62 --total_memory_gb=400 \
+    --qos="serial" --conda_base="mamba" --print_only=True
 ```
 `--n_jobs` - amount of parallel jobs and requested cpu cores if run using sbatch
 
@@ -179,10 +195,12 @@ bash your_cell_level_directory/snakemake/sbatch/sbatch.sh
 
 ### Run mapping interactively in the current shell
 ```shell
-yap-gcp run_mapping --workd="your_cell_level_directory" --config_path="m3c_config.ini" --n_jobs=14 --total_memory_gb=32 --print_only=False
+yap-gcp run_mapping --workd="your_cell_level_directory" \
+    --config_path="m3c_config.ini" --n_jobs=14 --total_memory_gb=32 \
+    --print_only=False
 ```
 
-# Background on the library preparation and structure
+# Background on library preparation and structure
 
 ## Library preparation
 384 random index primers are used, so each well on 384 well plates receives separate unique random index
