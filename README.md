@@ -58,7 +58,7 @@ hisat-3n-build --base-change C,T genome.fa genome
 ```
 ### Repeat index
 ```shell
-hisat-3n-build --base-change T,C --repeat-index genome.fa genome
+hisat-3n-build --base-change C,T --repeat-index genome.fa genome
 ```
 
 ### Repeat HISAT-3N integrated index with splice site information
@@ -116,8 +116,8 @@ yap default-mapping-config --mode mct-multi \
     --gtf "~/Ref/mm10/annotation.gtf" \
     --chrom_size_path "~/Ref/mm10/mm10.sizes" > mct_multi_config.ini
 ```
-**Attention**, --hisat3n_dna_ref expects prefix of each hisat genome file, not the directory path.
-If genome index directory ~/genomes/mus/hisat/ contains files hisat.3n.CT.1.ht2 hisat.3n.CT.2.ht2 etc you need to specify --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" in the command.
+**Attention**, `--hisat3n_dna_ref` expects prefix of each hisat genome file, not the directory path.
+If genome index directory `~/genomes/mus/hisat/` contains files `hisat.3n.CT.1.ht2` `hisat.3n.CT.2.ht2` etc you need to specify `--hisat3n_dna_ref ~/genomes/mus/hisat/hisat` in the command.
 
 Note that NOMe variants are invoked by adding the `--nome` flag to the base mode during configuration generation.
 
@@ -154,19 +154,20 @@ yap demultiplex --fastq_pattern "Pool_Remind1_m3c/*.fastq.gz" -o your_cell_level
 ```shell
 yap-gcp run_mapping --workd="your_cell_level_directory" --config_path="m3c_config.ini" --n_jobs=62 --total_memory_gb=400 --qos="serial" --conda_base="mamba" --print_only=True
 ```
---n_jobs - amount of parallel jobs and requested cpu cores if run using sbatch
+`--n_jobs` - amount of parallel jobs and requested cpu cores if run using sbatch
 
---total_memory_gb - total RAM memory requested, either per HPC node or locally
+`--total_memory_gb` - total RAM memory requested, either per HPC node or locally
 
---qos - QOS option passed to sbatch script if run on HPC. This is HPC dependent
+`--qos` - QOS option passed to sbatch script if run on HPC. This is HPC dependent
 
---conda_base - type of conda installation if using sbatch
+`--conda_base` - type of conda installation if using sbatch
   Accepted values are "mamba", "mambaforge", "conda", "miniconda", "anaconda", "miniforge", "miniforge3"
   If loaded as a module on HPC specify "module <module_name>", e.g. "module mamba"
   You can also provide custom path to your conda installation e.g. "/custom/path/to/conda.sh"
 
---print_only=True - writes snakemake, sbatch and qsub scripts into your_cell_level_directory/snakemake/
---print_only=False - run mapping interactively in the current shell
+`--print_only=True` - writes snakemake, sbatch and qsub scripts into your_cell_level_directory/snakemake/
+
+`--print_only=False` - run mapping interactively in the current shell
 
 ### Run mapping from generated script files
 ```shell
