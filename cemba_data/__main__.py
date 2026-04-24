@@ -470,81 +470,6 @@ def summary_register_subparser(subparser):
 	return
 
 
-def mc_bulk_subparser(subparser):
-	parser = subparser.add_parser('mc-bulk',
-								  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-								  help="Prepare the snakefile for merging single-cell ALLC files "
-									   "into pseudo-bulk ALLC files and generate BigWig files.")
-	parser_req = parser.add_argument_group("Required inputs")
-	parser_opt = parser.add_argument_group("Optional inputs")
-
-	parser_req.add_argument(
-		"--allc_table",
-		"-p",
-		type=str,
-		required=True,
-		help="Path of the allc table. The allc table is a two column tsv file. "
-			 "The first columns is the absolute ALLC file paths; "
-			 "the second column is the group name of each file."
-	)
-
-	parser_req.add_argument(
-		"--output_dir",
-		"-o",
-		type=str,
-		required=True,
-		help="Path of the output directory, will be created if not exist."
-	)
-
-	parser_req.add_argument(
-		"--chrom_size_path",
-		type=str,
-		required=True,
-		help="Path of the chromosome size file path."
-	)
-
-	parser_opt.add_argument(
-		"--mch_context",
-		type=str,
-		default='CHN',
-		help="mCH contexts for generating the bigwig tracks."
-	)
-
-	parser_opt.add_argument(
-		"--mcg_context",
-		type=str,
-		default='CGN',
-		help="mCG contexts for generating the bigwig tracks and merge strand."
-	)
-
-	parser_opt.add_argument(
-		"--bigwig_mch_bin_size",
-		type=int,
-		default=50,
-		help="Bin size used to generate mCH bigwig."
-	)
-
-	parser_opt.add_argument(
-		"--bigwig_mcg_bin_size",
-		type=int,
-		default=1,
-		help="Bin size used to generate mCG bigwig."
-	)
-
-	parser_opt.add_argument(
-		"--cpu_per_job",
-		type=int,
-		default=12,
-		help="Number of CPUs to use in individual merge-allc job."
-	)
-
-	parser_opt.add_argument(
-		"--total_cpu",
-		type=int,
-		default=12,
-		help="Number of CPUs to use in total."
-	)
-
 
 def snm3c_imputation_subparser(subparser):
 	parser = subparser.add_parser('m3c-impute',
@@ -728,7 +653,6 @@ def main():
 	update_snakemake_register_subparser(subparsers)
 	start_from_cell_fastq_register_subparser(subparsers)
 	summary_register_subparser(subparsers)
-	mc_bulk_subparser(subparsers)
 	snm3c_imputation_subparser(subparsers)
 	snm3c_dataset_subparser(subparsers)
 
@@ -769,8 +693,6 @@ def main():
 		from .mapping import start_from_cell_fastq as func
 	elif cur_command == 'summary':
 		from cemba_data.mapping import final_summary as func
-	elif cur_command == 'mc-bulk':
-		from cemba_data.bulk import prepare_mc_bulk as func
 	elif cur_command == 'm3c-impute':
 		from cemba_data.snm3C import prepare_impute_dir as func
 	elif cur_command == 'm3c-dataset':
