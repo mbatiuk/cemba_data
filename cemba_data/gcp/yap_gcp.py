@@ -52,53 +52,6 @@ def index_name2multiplex_group(x):
 	else:
 		return 'NA'
 
-def get_lanes_info(outdir):
-	#  uid={plate}-{multiplex_group}-{primer_name}
-	if os.path.exists("lane_info.txt"):
-		df1 = pd.read_csv("lane_info.txt", sep='\t')
-		df1.fastq_path = df1.fastq_path.apply(lambda x: eval(x))
-		return df1
-
-	uids, plates, multiple_groups, primer_names, lanes, index_names, read_types = glob_wildcards(
-		os.path.join(outdir, "{uid}/lanes/{plate}-{multiplex_group}-{primer_name}-{lane}-{index_name}-{read_type}.fq.gz"))
-	
-	if len(uids) == 0:
-		print("Run demultiplex.smk first, then run merge_lanes.smk !")
-		return None
-
-	df = pd.DataFrame.from_dict({
-		'uid': uids,
-		'plate': plates,
-		'multiplex_group': multiple_groups,
-		'primer_name': primer_names,
-		'lane': lanes,
-		'index_name': index_names,
-		'read_type': read_types
-	}).drop_duplicates()
-
-	df['fastq_path'] = df.apply(
-		lambda row: os.path.join(outdir, row.uid, "lanes", '-'.join(
-			row.loc[['uid', 'lane', 'index_name', 'read_type']].map(str).tolist()) + ".fq.gz"), axis=1)
-
-	# V2: if all FASTQs have the same multiplex group in filename (single multiplex group experiment),
-	# derive multiplex group from index name.
-	# Otherwise multiplex group is already correct in the filename (Ecker lab standard 6-group design).
-	if df['multiplex_group'].nunique() == 1:
-		df['real_multiplex_group'] = df.index_name.apply(index_name2multiplex_group)
-	else:
-		df['real_multiplex_group'] = df.multiplex_group.tolist()
-	df = df.loc[df.real_multiplex_group != 'NA']
-
-	# new uid (real uid)
-	df['uid'] = df.plate.map(str) + '-' + df.real_multiplex_group.map(str) + '-' + df.primer_name.map(str)
-
-	# Put multiple lanes fastq into one list
-	df1 = df.loc[:, ['uid', 'index_name', 'read_type',
-	                 'fastq_path']].groupby(
-		['uid', 'index_name', 'read_type'], as_index=False).agg(lambda x: x.tolist())
-	df1.to_csv("lane_info.txt", sep='\t', index=False)
-	return df1
-
 def get_random_index(UIDs, local_outdir="./"):
 	if not os.path.exists(local_outdir):
 		os.makedirs(local_outdir, exist_ok=True)
