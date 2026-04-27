@@ -11,22 +11,6 @@ from ...utilities import get_configuration
 
 PACKAGE_DIR = pathlib.Path(cemba_data.__path__[0])
 
-def prepare_uid_snakefile(uid_dir, config_str, snake_template):
-	cell_ids = [path.name.split('.')[0][:-3] for path in (uid_dir / 'fastq').glob('*R1.fq.gz')]
-	cell_id_str = f'CELL_IDS = {cell_ids}\n'
-
-	# no file in this UID, do not make snakefile
-	if len(cell_ids) == 0:
-		print(f'There is no cell_id parsed from FASTQ files, '
-			  f'check the {uid_dir}, make sure things are intact.')
-		return
-
-	total_snakefile = config_str + cell_id_str + snake_template
-	with open(uid_dir / 'Snakefile', 'w') as f:
-		f.write(total_snakefile)
-	return
-
-
 def validate_mapping_config(output_dir):
 	output_dir = pathlib.Path(output_dir).absolute()
 	config = get_configuration(output_dir / 'mapping_config.ini')
