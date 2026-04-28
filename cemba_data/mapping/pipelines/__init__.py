@@ -104,44 +104,6 @@ def make_all_snakefile(output_dir, subdir=None,
 	return
 
 
-def make_snakefile_hisat3n(output_dir):
-	output_dir = pathlib.Path(output_dir)
-
-	mapping_config_name = list(output_dir.glob('mapping_config.*'))[0].name
-
-	config = get_configuration(output_dir / mapping_config_name)
-	try:
-		mode = config['mode']
-	except KeyError:
-		raise KeyError('mode not found in the config file.')
-
-	skip_dirs = ['stats', 'snakemake', 'scool']
-	mapping_job_dirs = [p for p in output_dir.glob('*')
-						if p.is_dir() and (p.name not in skip_dirs)]
-
-	snakemake_dir = output_dir / 'snakemake'
-	snakemake_dir.mkdir(exist_ok=True)
-	stats_dir = output_dir / 'stats'
-	stats_dir.mkdir(exist_ok=True)
-
-	snakefile_path = os.path.join(PACKAGE_DIR, f'files/smk/hisat3n/{mode.lower()}.smk')
-
-	if not pathlib.Path(snakefile_path).exists():
-		print('Possible snakefile templates:')
-		for p in pathlib.Path(f'{PACKAGE_DIR}/files/smk/hisat3n/').glob('*.smk'):
-			print(p)
-		raise ValueError(f'Mode {mode} not supported, '
-						 f'because Snakefile {snakefile_path} not found.')
-
-	for p in mapping_job_dirs:
-		subprocess.run(['cp', f'{output_dir}/{mapping_config_name}',
-						f'{p}/{mapping_config_name}'], check=True)
-		subprocess.run(['cp', snakefile_path, f'{p}/Snakefile'], check=True)
-
-	# leave a flag to indicate using hisat-3n pipeline
-	subprocess.run(['touch', f'{output_dir}/snakemake/hisat3n'], check=True)
-	return
-
 
 def write_qsub_commands(output_dir, cores_per_job, total_memory_gb=None,
 						script_dir=None):
@@ -383,10 +345,12 @@ def start_from_cell_fastq(output_dir, fastq_pattern, config_path, n_group=64,
 		# make symlinks
 		new_r1_path = fastq_dir / r1_path.name
 		new_r1_path.symlink_to(r1_path)
-		new_r2_path = fastq_dir / r2_path.name
-		new_r2_path.symlink_to(r2_path)
+		if pd.notna(r2_path):
+			new_r2_path = fastq_dir / r2_path.name
+			new_r2_path.symlink_to(r2_path)
 
-	make_snakefile_hisat3n(output_dir)
+	for group_id in range(groups):
+		make_all_snakefile(output_dir, subdir=f'Group{group_id}', pattern="fastq/{cell_id}-R1.fq.gz")
 	if total_memory_gb is None:
 		total_memory_gb = 2 * n_jobs
 	prepare_run(output_dir, cores_per_job=n_jobs, total_memory_gb=total_memory_gb, qos=qos)
