@@ -1,6 +1,5 @@
 import os, sys
 import pandas as pd
-import fire
 import numpy as np
 import gzip
 import pysam
@@ -135,7 +134,3 @@ def bam2mhap(bam_path=None,annotation="~/Ref/hg38/annotations/hg38_allc.gz",
 	os.system(f"bgzip {output} && tabix -b 2 -e 3 {output}.gz")
 	fbam.close()
 	f.close()
-
-if __name__ == "__main__":
-	fire.core.Display = lambda lines, out: print(*lines, file=out)
-	fire.Fire(serialize=lambda x:print(x) if not x is None else print(""))

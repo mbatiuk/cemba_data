@@ -29,7 +29,6 @@ Source = "https://github.com/mbatiuk/cemba_data"
 [project.scripts]
 yap = "cemba_data.__main__:main"
 yap-hisat3n = "cemba_data.hisat3n.cli:main"
-yap-gcp = "cemba_data.gcp:main"
 
 [tool.setuptools.packages.find]
 exclude = ["doc"]

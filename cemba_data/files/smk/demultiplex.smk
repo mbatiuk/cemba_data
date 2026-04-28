@@ -5,7 +5,7 @@ import re
 import glob
 import cemba_data
 PACKAGE_DIR=cemba_data.__path__[0]
-from cemba_data.gcp import *
+from cemba_data.mapping.pipelines import get_fastq_info, get_random_index, index_name2multiplex_group
 from cemba_data.demultiplex import _parse_index_fasta,_read_cutadapt_result
 
 default_config={

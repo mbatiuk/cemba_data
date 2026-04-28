@@ -26,7 +26,6 @@ dependencies:
   - numpy
   - dnaio
   - click
-  - fire
   - pysam
   - pip:
     - git+https://github.com/mbatiuk/cemba_data

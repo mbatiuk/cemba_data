@@ -80,7 +80,7 @@ hisat2-build -p 16 genome.fa hisat_rna
 ### m3c - DNA methylation+ 3C
 ```shell
 yap default-mapping-config --mode m3c \
-    --genome "~/genomes/mus/mm10_chrL.fa" \
+    --genome_fasta "~/genomes/mus/mm10_chrL.fa" \
     --chrom_size_path "~/genomes/mus/mm10.sizes" \
     --hisat3n_dna_ref  "~/genomes/mus/hisat/hisat" > m3c_config.ini
 ```
@@ -88,7 +88,7 @@ yap default-mapping-config --mode m3c \
 ### mc - DNA methylation
 ```shell
 yap default-mapping-config --mode mc \
-    --genome "~/genomes/mus/mm10_chrL.fa" \
+    --genome_fasta "~/genomes/mus/mm10_chrL.fa" \
     --chrom_size_path "~/genomes/mus/mm10.sizes" \
     --hisat3n_dna_ref  "~/genomes/mus/hisat/hisat" > mc_config.ini
 ```
@@ -98,7 +98,7 @@ yap default-mapping-config --mode mc \
 yap default-mapping-config --mode mct \
     --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" \
     --hisat3n_rna_ref "~/genomes/mus/hisat_rna/hisat_rna" \
-    --genome "~/genomes/mus/mm10_chrL.fa" \
+    --genome_fasta "~/genomes/mus/mm10_chrL.fa" \
     --chrom_size_path "~/genomes/mus/mm10.sizes" \
     --gtf "~/genomes/mus/gencode.vM23.annotation.gtf" > mct_config.ini
 ```
@@ -106,7 +106,7 @@ yap default-mapping-config --mode mct \
 ### mc nome - DNA methylation + NOMe
 ```shell
 yap default-mapping-config --mode mc --nome \
-    --genome "~/genomes/mus/mm10_chrL.fa" \
+    --genome_fasta "~/genomes/mus/mm10_chrL.fa" \
     --chrom_size_path "~/genomes/mus/mm10.sizes" \
     --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" > mc_nome_config.ini
 ```
@@ -114,7 +114,7 @@ yap default-mapping-config --mode mc --nome \
 ### mc-multi - multi-mapping reads retained during mc
 ```shell
 yap default-mapping-config --mode mc-multi \
-    --genome "~/genomes/mus/mm10_chrL.fa" \
+    --genome_fasta "~/genomes/mus/mm10_chrL.fa" \
     --chrom_size_path "~/genomes/mus/mm10.sizes" \
     --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" > mc_multi_config.ini
 ```
@@ -122,7 +122,7 @@ yap default-mapping-config --mode mc-multi \
 ### mct-multi - multi-mapping reads retained during mct
 ```shell
 yap default-mapping-config --mode mct-multi \
-    --genome "~/genomes/mus/mm10_chrL.fa" \
+    --genome_fasta "~/genomes/mus/mm10_chrL.fa" \
     --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" \
     --hisat3n_rna_ref "~/genomes/mus/hisat_rna/hisat_rna" \
     --gtf "~/genomes/mus/annotation.gtf" \
@@ -149,26 +149,20 @@ During NOMe variant the GCH contain open chromatin information, HCN contain norm
 
 ## Demultiplex
 
-### Old yap pipeline
 ```shell
-yap demultiplex --fastq_pattern "Pool_Remind1_m3c/*.fastq.gz" \
-    -o your_cell_level_directory -j 16 --config_path m3c_config.ini
+yap demultiplex --fq_dir "fastq_dir" \
+    --output_dir "your_cell_level_directory" --n_jobs 16 --print_only
 ```
-
-### New yap-gcp
-```shell
- yap-gcp run_demultiplex --fq_dir="Pool_Remind1_m3c" \
-    --outdir="your_cell_level_directory" --n_jobs=16 --print_only=True
-```
+`--print_only` - prints demultiplex snakemake command but does not start it interactively
 
 ## Mapping
 
 
 ### Generate snakemake, sbatch and qsub scripts to start the mapping
 ```shell
-yap-gcp run_mapping --workd="your_cell_level_directory" \
-    --config_path="m3c_config.ini" --n_jobs=62 --total_memory_gb=400 \
-    --qos="serial" --conda_base="mamba" --print_only=True
+yap mapping --output_dir "your_cell_level_directory" \
+    --config_path "m3c_config.ini" --n_jobs 62 --total_memory_gb 400 \
+    --qos "serial" --conda_base "mamba" --print_only
 ```
 `--n_jobs` - amount of parallel jobs and requested cpu cores if run using sbatch
 
@@ -181,23 +175,20 @@ yap-gcp run_mapping --workd="your_cell_level_directory" \
   If loaded as a module on HPC specify "module <module_name>", e.g. "module mamba"
   You can also provide custom path to your conda installation e.g. "/custom/path/to/conda.sh"
 
-`--print_only=True` - writes snakemake, sbatch and qsub scripts into your_cell_level_directory/snakemake/
-
-`--print_only=False` - run mapping interactively in the current shell
+`--print_only` - writes snakemake, sbatch and qsub scripts into your_cell_level_directory/snakemake/
 
 ### Run mapping from generated script files
 ```shell
 bash your_cell_level_directory/snakemake/qsub/snakemake_cmd.txt
 ```
 ```shell
-bash your_cell_level_directory/snakemake/sbatch/sbatch.sh
+bash your_cell_level_directory/snakemake/sbatch/sbatch-serial-qos.sh
 ```
 
 ### Run mapping interactively in the current shell
 ```shell
-yap-gcp run_mapping --workd="your_cell_level_directory" \
-    --config_path="m3c_config.ini" --n_jobs=14 --total_memory_gb=32 \
-    --print_only=False
+yap mapping --output_dir "your_cell_level_directory" \
+    --config_path "m3c_config.ini" --n_jobs 14 --total_memory_gb 32
 ```
 
 # Background on library preparation and structure
