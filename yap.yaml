@@ -25,7 +25,6 @@ dependencies:
   - pandas
   - numpy
   - dnaio
-  - click
   - pysam
   - pip:
     - git+https://github.com/mbatiuk/cemba_data
