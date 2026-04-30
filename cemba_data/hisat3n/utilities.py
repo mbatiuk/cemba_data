@@ -48,53 +48,6 @@ def read_mapping_config(cwd: str = '.'):
     return config
 
 
-def validate_cwd_fastq_paths(cwd: str = '.'):
-    """
-    Validate fastq paths in the fastq subdirectory of cwd.
-    Parameters
-    ----------
-    cwd :
-        Path of the current working directory.
-
-    Returns
-    -------
-    fastq_table : pandas.DataFrame
-    """
-    fastq_paths = [
-        p for p in pathlib.Path(f'{cwd}/fastq/').glob('*.[fq.gz][fastq.gz]')
-        if 'trim' not in p.name
-    ]
-
-    fastq_pattern = re.compile(
-        r'(?P<cell_id>.+)(-|_)(?P<read_type>(R1|R2|r1|r2)).(fastq|fq)(.gz)*'
-    )
-    fastq_records = {}
-    for p in fastq_paths:
-        match = fastq_pattern.match(p.name)
-        if match is not None:
-            cell_id = match.group('cell_id')
-            read_type = match.group('read_type')
-            fastq_records[cell_id, read_type.upper()] = str(p)
-
-    if len(fastq_records) == 0:
-        raise ValueError('No fastq files found in fastq folder, '
-                         'or no fastq files match expected file name pattern')
-
-    fastq_table = pd.Series(fastq_records).unstack()
-    if 'R1' not in fastq_table.columns or 'R2' not in fastq_table.columns:
-        raise ValueError('No R1 or R2 fastq files found')
-    fastq_table = fastq_table[['R1', 'R2']].copy()
-
-    missing_file = fastq_table.isna().sum(axis=1) > 0
-    if missing_file.sum() > 0:
-        for cell in missing_file[missing_file].index:
-            print(f'{cell} missing R1 or R2 FASTQ file.')
-        raise FileNotFoundError(
-            f'FASTQ files in {pathlib.Path(f"{cwd}/fastq/").absolute()} is not all paired.'
-        )
-    return fastq_table
-
-
 def get_allc_lambda_frac(allc_list, num_upstr_bases):
     """Compute bisulfite conversion rate from lambda spike-in DNA (chrL)."""
     num_upstr_bases = int(num_upstr_bases)

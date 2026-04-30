@@ -2,13 +2,37 @@
 Demultiplex pipeline
 """
 
-import logging
 import re
 import pandas as pd
+import os
 
-# logger
-log = logging.getLogger(__name__)
-log.addHandler(logging.NullHandler())
+
+def _parse_fastq_path(path):
+    """
+    UID pattern: {sample_id_prefix}-{plate}-{multiplex_group}-{barcode_name}
+    FASTQ name pattern:
+    {sample_id_prefix}-{plate}-{multiplex_group}-{barcode_name}_{internal_info}_{lane}_{read_type}_{internal_info}.fastq.gz
+    """
+    try:
+        *_, plate, multiplex_group, multi_field = os.path.basename(path).split('-')
+        primer_name, *_, lane, read_type, _ = multi_field.split('_')
+        try:
+            assert primer_name[0] in 'ABCDEFGHIJKLMNOP'
+            assert int(primer_name[1:]) in list(range(1, 25))
+            assert int(multiplex_group) in list(range(1, 7))
+            assert lane in {'L001', 'L002', 'L003', 'L004', 'L005', 'L006', 'L007', 'L008'}
+        except AssertionError:
+            raise ValueError
+    except ValueError:
+        raise ValueError(f'Found unknown name pattern in path {path}')
+    name_dict = dict(plate=plate,
+                     multiplex_group=multiplex_group,
+                     primer_name=primer_name,
+                     lane=lane,
+                     read_type=read_type,
+                     fastq_path=path,
+                     uid=f'{plate}-{multiplex_group}-{primer_name}')
+    return pd.Series(name_dict)
 
 
 def _parse_index_fasta(fasta_path):

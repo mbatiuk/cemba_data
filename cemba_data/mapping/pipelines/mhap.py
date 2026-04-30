@@ -1,9 +1,7 @@
-import os, sys
+import os
 import pandas as pd
-import numpy as np
-import gzip
 import pysam
-from collections import defaultdict
+
 
 def _is_hisat3n_ct_read(read):
 	return read.get_tag('YZ') == '+'

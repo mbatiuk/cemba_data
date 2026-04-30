@@ -9,8 +9,7 @@ from .m3c import m3c_config_str
 from .mc import mc_config_str
 from .mct import mct_config_str
 from ...utilities import get_configuration
-from cemba_data.demultiplex.fastq_dataframe import _parse_fastq_path
-from cemba_data.demultiplex import _parse_index_fasta
+from cemba_data.demultiplex import _parse_index_fasta, _parse_fastq_path
 
 PACKAGE_DIR = pathlib.Path(cemba_data.__path__[0])
 
