@@ -12,27 +12,6 @@ from ...utilities import get_configuration
 
 PACKAGE_DIR = pathlib.Path(cemba_data.__path__[0])
 
-def validate_mapping_config(output_dir):
-	output_dir = pathlib.Path(output_dir).absolute()
-	config = get_configuration(output_dir / 'mapping_config.ini')
-	try:
-		mode = config['mode']
-	except KeyError:
-		raise KeyError('mode not found in the config file.')
-
-	if mode.split('-')[0] == 'mc':
-		config_str = mc_config_str(config)
-	elif mode.split('-')[0] == 'mct':
-		config_str = mct_config_str(config)
-	elif mode.split('-')[0] == 'm3c':
-		config_str = m3c_config_str(config)
-	else:
-		raise ValueError(f'Unknown mode {mode}')
-
-	print(f'Mapping config file looks good. Here is what will be used in generating Snakefile:\n{config_str}')
-	return
-
-
 def make_all_snakefile(output_dir, subdir=None,
 					   snakemake_template=None, pattern="fastq/{cell_id}-R1.fq.gz"):
 	"""
