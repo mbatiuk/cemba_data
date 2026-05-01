@@ -6,9 +6,8 @@ import pathlib
 import re
 import pandas as pd
 import os
-import cemba_data
 
-PACKAGE_DIR = pathlib.Path(cemba_data.__path__[0])
+MODULE_DIR = pathlib.Path(__file__).parent.absolute()
 
 def _parse_fastq_path(path):
     """
@@ -149,8 +148,7 @@ def get_random_index(UIDs, local_outdir="./"):
 	R = []
 	for uid in UIDs:
 		multiplex_group = uid.split('-')[-2]
-		random_index_fa = os.path.join(PACKAGE_DIR, 'files', 'random_index_v2',
-		                               f'random_index_v2.multiplex_group_{multiplex_group}.fa')
+		random_index_fa = MODULE_DIR / 'random_index_v2' / f'random_index_v2.multiplex_group_{multiplex_group}.fa'
 		index_seq_dict = _parse_index_fasta(random_index_fa)
 		index_names = list(index_seq_dict.keys())
 		for index_name in index_names:
@@ -171,7 +169,7 @@ def demultiplex(fq_dir="fastq", output_dir="test", n_jobs=16, print_only=False):
 	"""
 	Run demultiplex on local machine.
 	"""
-	smk1 = os.path.join(PACKAGE_DIR, 'files/smk/demultiplex.smk')
+	smk1 = MODULE_DIR /'demultiplex.smk'
 	cmd = f'snakemake -s {smk1} --scheduler greedy --printshellcmds --rerun-incomplete ' \
 	      f'--config fq_dir="{fq_dir}" outdir="{output_dir}" -j {n_jobs}'
 

@@ -3,11 +3,10 @@ import pandas as pd
 import pathlib
 import re
 import glob
-import cemba_data
 from cemba_data.demultiplex import _parse_index_fasta,_read_cutadapt_result, \
 get_fastq_info, get_random_index, index_name2multiplex_group
 
-PACKAGE_DIR=cemba_data.__path__[0]
+MODULE_DIR = pathlib.Path(workflow.snakefile).parent.absolute()
 
 default_config={
     'total_read_pairs_min':1,
@@ -44,7 +43,7 @@ rule summary_demultiplex:
         shell(f"mkdir -p {params.stat_dir}")
         df_fq.to_csv(output.fq_info,sep='\t',index=False)
         df_index.to_csv(output.index_info,sep='\t',index=False)
-        random_index_fasta_path=os.path.join(PACKAGE_DIR,'files','random_index_v2','random_index_v2.fa')
+        random_index_fasta_path = MODULE_DIR / 'random_index_v2' / 'random_index_v2.fa'
         index_seq_dict = _parse_index_fasta(random_index_fasta_path)
         index_name_dict = {v: k for k, v in index_seq_dict.items()}
         stat_list = []
@@ -103,8 +102,8 @@ rule run_demultiplex: #{prefixes}-{plates}-{multiplex_groups}-{primer_names}_{pn
 
     params:
         # V2-single: use full 384 index fa; V2 standard: use per-multiplex-group fa
-        random_index_fa=lambda wildcards: os.path.join(PACKAGE_DIR, 'files', 'random_index_v2', 'random_index_v2.fa') if v2_single \
-                                    else os.path.join(PACKAGE_DIR, 'files', 'random_index_v2', 'random_index_v2.multiplex_group_' + wildcards.uid.split('-')[-2] + '.fa'),
+        random_index_fa=lambda wildcards: MODULE_DIR / 'random_index_v2' / 'random_index_v2.fa' if v2_single \
+                                    else MODULE_DIR / 'random_index_v2' / f'random_index_v2.multiplex_group_{wildcards.uid.split("-")[-2]}.fa',
         outdir=lambda wildcards: outdir+f"/{wildcards.uid}/demultiplex",
         R1=lambda wildcards: outdir+f"/{wildcards.uid}/demultiplex/{'{{name}}'}-R1.fq.gz",
         R2=lambda wildcards: outdir+f"/{wildcards.uid}/demultiplex/{'{{name}}'}-R2.fq.gz"
@@ -120,7 +119,7 @@ rule run_demultiplex: #{prefixes}-{plates}-{multiplex_groups}-{primer_names}_{pn
         os.remove(input.R2)
 
         # parse demultiplex.stats.txt for cell_qc
-        random_index_fasta_path = os.path.join(PACKAGE_DIR,'files','random_index_v2','random_index_v2.fa')
+        random_index_fasta_path = MODULE_DIR / 'random_index_v2' / 'random_index_v2.fa'
         index_seq_dict = _parse_index_fasta(random_index_fasta_path)
         index_name_dict = {v: k for k, v in index_seq_dict.items()}
         single_df = _read_cutadapt_result(output.stats_out)
