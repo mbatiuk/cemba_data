@@ -1,11 +1,9 @@
 import pathlib
 
-import cemba_data
-from ..utilities import MAPPING_MODE_CHOICES
-
 # Load defaults
-PACKAGE_DIR = pathlib.Path(cemba_data.__path__[0])
+CONFIG_DIR = pathlib.Path(__file__).parent / 'default_config'
 
+MAPPING_MODE_CHOICES = ['mct','mct-multi', 'mc', 'm3c','m3c-multi', 'mc-multi']
 
 def print_default_mapping_config(mode,
                                  genome_fasta,
@@ -28,23 +26,23 @@ def print_default_mapping_config(mode,
 
         if mode.split('-')[0] == 'mc':
                 if nome:
-                        config_path = PACKAGE_DIR / 'files/default_config/mapping_config_nome.ini'
+                        config_path = CONFIG_DIR / 'mapping_config_nome.ini'
                 else:
-                        config_path = PACKAGE_DIR / 'files/default_config/mapping_config_mc.ini'
+                        config_path = CONFIG_DIR / 'mapping_config_mc.ini'
                 with open(config_path) as f:
                         config_content = f.read()
         elif mode.split('-')[0] == 'mct':
                 if nome:
-                        config_path = PACKAGE_DIR / 'files/default_config/mapping_config_mct-nome.ini'
+                        config_path = CONFIG_DIR / 'mapping_config_mct-nome.ini'
                 else:
-                        config_path = PACKAGE_DIR / 'files/default_config/mapping_config_mct.ini'
+                        config_path = CONFIG_DIR / 'mapping_config_mct.ini'
                 with open(config_path) as f:
                         config_content = f.read()
                 config_content = config_content.replace('CHANGE_THIS_TO_YOUR_HISAT3N_RNA_REFERENCE',
                                                         str(hisat3n_rna_ref))
                 config_content = config_content.replace('CHANGE_THIS_TO_YOUR_GENE_ANNOTATION_GTF', str(gtf))
         elif mode.split('-')[0] == 'm3c':
-                config_path = PACKAGE_DIR / 'files/default_config/mapping_config_m3c.ini'
+                config_path = CONFIG_DIR / 'mapping_config_m3c.ini'
                 with open(config_path) as f:
                         config_content = f.read()
         else:

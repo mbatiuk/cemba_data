@@ -33,4 +33,4 @@ yap = "cemba_data.__main__:main"
 exclude = ["doc"]
 
 [tool.setuptools.package-data]
-"*" = ["*.txt", "*.tsv", "*.csv", "*.fa", "*Snakefile", "*.ipynb", "*.smk"]
+"*" = ["*.txt", "*.tsv", "*.csv", "*.fa", "*Snakefile", "*.ipynb", "*.smk", "*.ini"]

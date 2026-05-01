@@ -15,5 +15,3 @@ def get_configuration(config_path):
             total_config[k] = v
     return total_config
 
-
-MAPPING_MODE_CHOICES = ['mct','mct-multi', 'mc', 'm3c','m3c-multi', 'mc-multi']

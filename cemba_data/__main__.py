@@ -240,12 +240,12 @@ def print_default_config_register_subparser(subparser):
     parser = subparser.add_parser('default-mapping-config',
                                   formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                   help="Print out default config of mapping pipeline")
-    from cemba_data.utilities import MAPPING_MODE_CHOICES
+    from .config import MAPPING_MODE_CHOICES
     parser.add_argument(
         "--mode",
         type=str,
         required=True,
-        # choices=MAPPING_MODE_CHOICES,
+        choices=MAPPING_MODE_CHOICES,
         help="Library mode"
     )
 
@@ -493,7 +493,7 @@ def main():
     elif cur_command == 'sbatch':
         from cemba_data.sbatch import sbatch_submitter as func
     elif cur_command == 'default-mapping-config':
-        from .mapping import print_default_mapping_config as func
+        from .config import print_default_mapping_config as func
     elif cur_command == 'mapping-cell-fastq':
         from .mapping import mapping_cell_fastq as func
     elif cur_command == 'demultiplex':
