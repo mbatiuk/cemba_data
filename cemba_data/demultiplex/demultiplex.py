@@ -61,6 +61,15 @@ def make_fastq_df(fq_dir):
 	input_files = glob.glob(os.path.join(os.path.expanduser(fq_dir), "*.fastq.gz")) + \
 	              glob.glob(os.path.join(os.path.expanduser(fq_dir), "*.fq.gz"))
 	
+	#Verify if there are any fastq files
+	if not input_files:
+		raise FileNotFoundError(f"No .fastq.gz or .fq.gz files found in {fq_dir}.")
+
+	# Verify every link to a fastq file is real before proceeding
+	for f in input_files:
+		if not os.path.exists(f):
+			raise FileNotFoundError(f"Broken symbolic link to fastq file: {f}")
+
 	df = pd.DataFrame([_parse_fastq_path(file) for file in input_files])
 	df.fastq_path = df.fastq_path.apply(lambda x: str(x))
 	return df
@@ -79,6 +88,39 @@ def get_fastq_info(fq_dir, local_outdir="./"):
 	if df.groupby(['lane', 'read_type'])['uid'].nunique().nunique() != 1:
 		print("Warning: number of uids (or fastq files) are different.")
 		print(df.groupby(['lane', 'read_type'])['uid'].nunique())
+
+	# Check that both R1 and R2 are present for every fastq read pair
+	pivot = df.groupby(['uid', 'lane'])['read_type'].apply(set)
+	missing_r1 = pivot[pivot.apply(lambda s: 'R1' not in s)]
+	missing_r2 = pivot[pivot.apply(lambda s: 'R2' not in s)]
+	errors = []
+
+	if not missing_r1.empty:
+		for (uid, lane) in missing_r1.index:
+			r2_path = df.loc[
+				(df.uid == uid) & (df.lane == lane) & (df.read_type == 'R2'),
+				'fastq_path'
+			].values[0]
+			expected_r1 = r2_path.replace('_R2_', '_R1_')
+			errors.append(
+				f"  Found R2:       {r2_path}\n"
+				f"  Expected R1 at: {expected_r1}"
+			)
+
+	if not missing_r2.empty:
+		for (uid, lane) in missing_r2.index:
+			r1_path = df.loc[
+				(df.uid == uid) & (df.lane == lane) & (df.read_type == 'R1'),
+				'fastq_path'
+			].values[0]
+			expected_r2 = r1_path.replace('_R1_', '_R2_')
+			errors.append(
+				f"  Found R1:       {r1_path}\n"
+				f"  Expected R2 at: {expected_r2}"
+			)
+
+	if errors:
+		raise FileNotFoundError("Incomplete FASTQ pairs detected:\n" + "\n".join(errors))
 
 	df = df.loc[df.read_type == 'R1']
 	df.rename(columns={'fastq_path': 'R1'}, inplace=True)
