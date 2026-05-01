@@ -8,7 +8,6 @@ import argparse
 import logging
 import os
 import sys
-
 import cemba_data
 from cemba_data import __version__
 
@@ -498,7 +497,7 @@ def main():
     elif cur_command == 'mapping-cell-fastq':
         from .mapping import mapping_cell_fastq as func
     elif cur_command == 'demultiplex':
-        from .mapping import demultiplex as func
+        from .demultiplex import demultiplex as func
     elif cur_command == 'mapping':
         from .mapping import mapping as func
     elif cur_command == 'summary':
