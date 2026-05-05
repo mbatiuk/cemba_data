@@ -489,9 +489,9 @@ def main():
     cur_command = args_vars.pop('command')
     # Do real import here:
     if cur_command == 'qsub':
-        from cemba_data.qsub import qsub as func
+        from cemba_data.mapping.hpc.qsub import qsub as func
     elif cur_command == 'sbatch':
-        from cemba_data.sbatch import sbatch_submitter as func
+        from cemba_data.mapping.hpc.sbatch import sbatch_submitter as func
     elif cur_command == 'default-mapping-config':
         from .config import print_default_mapping_config as func
     elif cur_command == 'mapping-cell-fastq':

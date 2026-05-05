@@ -13,9 +13,7 @@ import pandas as pd
 import random
 import string
 
-import cemba_data
-
-PACKAGE_DIR = pathlib.Path(cemba_data.__path__[0])
+MODULE_DIR = pathlib.Path(__file__).parent
 
 # name: max_jobs
 DEFAULT_MAX_JOBS = 1000
@@ -176,7 +174,7 @@ def make_sbatch_script_files(commands, sbatch_dir, name_prefix, qos, time_str, e
                              template='yap', mem='300G', cpus=62, conda_base='mamba'):
     """See Slurm doc: https://slurm.schedmd.com/sbatch.html"""
     if template == 'yap':
-        with open(PACKAGE_DIR / 'files/sbatch_template_yap.txt') as f:
+        with open(MODULE_DIR / 'sbatch_template_yap.txt') as f:
             sbatch_template = f.read()
     else:
         raise ValueError('Only support "yap" template')
