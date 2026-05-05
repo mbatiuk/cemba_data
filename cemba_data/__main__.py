@@ -501,7 +501,7 @@ def main():
     elif cur_command == 'mapping':
         from .mapping import mapping as func
     elif cur_command == 'summary':
-        from cemba_data.mapping import final_summary as func
+        from cemba_data.summary import final_summary as func
     else:
         log.debug(f'{cur_command} not Known, check the main function if else part')
         parser.parse_args(["-h"])

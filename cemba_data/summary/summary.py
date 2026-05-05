@@ -1,11 +1,9 @@
 import pathlib
-import cemba_data
 import pandas as pd
 from papermill import execute_notebook, PapermillExecutionError
 
 
-PACKAGE_DIR = pathlib.Path(cemba_data.__path__[0])
-
+MODULE_DIR = pathlib.Path(__file__).parent
 
 # plate info
 def _parse_cell_id(cell_id):
@@ -16,7 +14,6 @@ def _parse_cell_id(cell_id):
     return pd.Series({
         'Plate': plate,
         'PCRIndex': pcr_index,
-        'MultiplexGroup': multiplex_group,
         'RandomIndex': random_index,
         'Col384': col384,
         'Row384': row384
@@ -41,7 +38,7 @@ def get_plate_info(cell_ids):
 
 
 # Final summary function. It will aggregate all mapping summaries
-# It will also add Plate, PCRIndex, MultiplexGroup, RandomIndex, Col384, and Row384 metadata
+# It will also add Plate, PCRIndex, RandomIndex, Col384, and Row384 metadata
 # And it will also write ALLC path file for generating MCDS
 
 def final_summary(output_dir, notebook=None, mode='m3c', kernel_name='python3'):
@@ -95,7 +92,7 @@ def final_summary(output_dir, notebook=None, mode='m3c', kernel_name='python3'):
         nb_path = output_dir / 'stats/MappingSummary.ipynb'
         try:
             if notebook is None:
-                template_notebook = PACKAGE_DIR / f'files/mapping_summary_template/{mode}_template.ipynb'
+                template_notebook = MODULE_DIR / f'mapping_summary_template/{mode}_template.ipynb'
             else:
                 template_notebook = str(notebook)
 
