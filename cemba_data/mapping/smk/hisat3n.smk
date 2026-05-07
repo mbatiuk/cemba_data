@@ -212,7 +212,8 @@ rule call_chromatin_contacts:
         call_chromatin_contacts(bam_path=input.bam,
                                 contact_prefix=params.contact_prefix,
                                 save_raw=False,
-                                save_hic_format=True)
+                                save_hic_format=True,
+                                span=config['min_gap'])
 
 
 rule sort_bam_by_pos:
