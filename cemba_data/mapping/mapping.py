@@ -298,11 +298,7 @@ def m3c_config_str(config):
         'num_upstr_bases': 0,
         'num_downstr_bases': 2,
         'compress_level': 5,
-        'split_left_size': 40,
-        'split_right_size': 40,
-        'split_middle_min_size': 30,
-        'min_gap': 2500,
-        'trim_on_both_end': 5
+        'min_gap': 2500
     }
 
     str_parameters = {
