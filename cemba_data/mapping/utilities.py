@@ -1,10 +1,10 @@
 import pathlib
-import re
 from collections import defaultdict
 import pandas as pd
 import yaml
+import pysam
 from pysam import TabixFile
-from ..utilities import get_configuration
+from cemba_data.utilities import get_configuration
 
 
 def _read_yaml_config(config_path):

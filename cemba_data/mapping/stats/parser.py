@@ -3,12 +3,12 @@ Each cell_parser function takes a path from single cell and return a series name
 
 """
 import pathlib
-import os,sys
+import os
 import numpy as np
 import pandas as pd
 import pysam
 
-from .stats_col_names import COL_NAMES
+from .col_names import COL_NAMES
 
 
 def cell_parser_unique_bam_clusters(stat_path):

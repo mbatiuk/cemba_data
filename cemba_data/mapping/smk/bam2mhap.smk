@@ -79,7 +79,7 @@ rule bam_to_mhap:
     resources:
         mem_mb=400
     run:
-        from cemba_data.mapping.pipelines import bam2mhap
+        from cemba_data.mapping import bam2mhap
         if not os.path.exists(mhap_dir):
             os.mkdir(mhap_dir)
         outfile1=output.mhap1[:-3] #"allc/{cell_id}.mhap", will be bgzipped and tabix indexed in mhap

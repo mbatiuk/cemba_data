@@ -1,9 +1,13 @@
 import os
-from cemba_data.hisat3n import *
-import cemba_data
-PACKAGE_DIR=cemba_data.__path__[0]
+import pathlib
+import cemba_data.mapping
+from cemba_data.mapping import *
+
+SMK_DIR = pathlib.Path(cemba_data.mapping.__file__).parent / 'smk'
 include:
-    os.path.join(PACKAGE_DIR,"files","smk",'hisat3n_base.smk')
+    SMK_DIR / 'hisat3n_base.smk'
+
+
 # ==================================================
 # FASTQ Trimming
 # ==================================================

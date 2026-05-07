@@ -1,8 +1,11 @@
 import os,sys
-import cemba_data
-PACKAGE_DIR=cemba_data.__path__[0]
+import pathlib
+import cemba_data.mapping
+from cemba_data.mapping import *
+
+SMK_DIR = pathlib.Path(cemba_data.mapping.__file__).parent / 'smk'
 include:
-    os.path.join(PACKAGE_DIR,"files","smk",'mct_base.smk')
+    SMK_DIR / 'hisat3n_base.smk'
 
 # the summary rule is the final target
 rule summary:
@@ -14,24 +17,16 @@ rule summary:
         expand("bam/{cell_id}.hisat3n_dna_summary.txt", cell_id=CELL_IDS),
         expand("bam/{cell_id}.hisat3n_dna.unique_align.deduped.matrix.txt",cell_id=CELL_IDS),
         expand("bam/{cell_id}.hisat3n_dna.multi_align.deduped.matrix.txt", cell_id=CELL_IDS),
-        expand("bam/{cell_id}.hisat3n_dna.unique_align.deduped.dna_reads.reads_mch_frac.csv",
-                        cell_id=CELL_IDS),
-        expand("bam/{cell_id}.hisat3n_dna.multi_align.deduped.dna_reads.reads_mch_frac.csv", cell_id=CELL_IDS),
-        expand("bam/{cell_id}.hisat3n_dna.multi_align.deduped.dna_reads.bam.bai",cell_id=CELL_IDS),
-        expand("bam/{cell_id}.hisat3n_dna.unique_align.deduped.dna_reads.bam.bai",
-                    cell_id=CELL_IDS),
-
-        # rna mapping
-        expand("bam/{cell_id}.hisat3n_rna_summary.txt",cell_id=CELL_IDS),
-        expand("bam/{cell_id}.hisat3n_rna.unique_align.rna_reads.reads_mch_frac.csv",cell_id=CELL_IDS),
-        expand("bam/{cell_id}.hisat3n_rna.unique_align.rna_reads.bam.bai",cell_id=CELL_IDS),
-        expand("bam/{cell_id}.hisat3n_rna.unique_align.rna_reads.feature_count.tsv",cell_id=CELL_IDS),
-        expand("bam/{cell_id}.hisat3n_rna.unique_align.rna_reads.feature_count.tsv.summary",cell_id=CELL_IDS),
 
         # allc
         expand("allc/{cell_id}.allc.tsv.gz.count.csv", cell_id=CELL_IDS),
         expand("allc/{cell_id}.allc.tsv.gz",cell_id=CELL_IDS),
         expand("allc/{cell_id}.allc.tsv.gz.tbi",cell_id=CELL_IDS),
+
+        #allc-multi
+        expand("allc-multi/{cell_id}.allc_multi.tsv.gz.count.csv",cell_id=CELL_IDS),
+        expand("allc-multi/{cell_id}.allc_multi.tsv.gz",cell_id=CELL_IDS),
+        expand("allc-multi/{cell_id}.allc_multi.tsv.gz.tbi",cell_id=CELL_IDS),
 
         # allc-CGN
         expand("allc-{mcg_context}/{cell_id}.{mcg_context}-Merge.allc.tsv.gz.tbi", cell_id=CELL_IDS, mcg_context=mcg_context),
@@ -44,8 +39,7 @@ rule summary:
 
         # generate the final summary
         indir='.'
-        aggregate_feature_counts(indir=indir)
-        snmct_summary(outname=output.csv,indir=indir)
+        snmc_summary(outname=output.csv,indir=indir)
 
         # cleanup
         shell(f"rm -rf {bam_dir}/temp")
@@ -53,18 +47,10 @@ rule summary:
 module hisat3n:
     snakefile:
         # here, plain paths, URLs and the special markers for code hosting providers (see below) are possible.
-        os.path.join(PACKAGE_DIR,"files","smk",'hisat3n.smk')
+        SMK_DIR / 'hisat3n.smk'
     config: config
 
-# use rule * from hisat3n exclude trim as hisat3n_*
-use rule sort_fq,unique_reads_cgn_extraction from hisat3n
-
-module mct:
-    snakefile:
-        # here, plain paths, URLs and the special markers for code hosting providers (see below) are possible.
-            os.path.join(PACKAGE_DIR,"files","smk",'hisat3n',"mct.smk")
-
-use rule * from mct exclude sort_dna_bam as mct_*
+use rule * from hisat3n exclude unique_reads_allc,hisat_3n_pair_end_mapping_dna_mode,index_bam as hisat3n_*
 
 rule hisat_3n_pair_end_mapping_dna_mode:
     input:
@@ -77,7 +63,7 @@ rule hisat_3n_pair_end_mapping_dna_mode:
         config['hisat3n_threads']
     resources:
         mem_mb=14000
-    shell: #
+    shell: # -q 1
         """
         hisat-3n {config[hisat3n_dna_reference]} -q  -1 {input.R1} -2 {input.R2} \
 --directional-mapping-reverse --base-change C,T {repeat_index_flag} \
@@ -85,11 +71,11 @@ rule hisat_3n_pair_end_mapping_dna_mode:
 --summary-file {output.stats} --threads {threads} | samtools view -b -q 1 -o {output.bam}
         """
 
-rule sort_dna_bam:
+rule mc_multi_sort_bam:
     input:
-        bam=bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam",
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.unsort.bam" #output of rule hisat_3n_pair_end_mapping_dna_mode from hisat3n.smk
     output:
-        bam = temp(bam_dir + "/{cell_id}.hisat3n_dna.bam"),
+        bam=temp(bam_dir+"/{cell_id}.hisat3n_dna.bam")
     resources:
         mem_mb=1000
     threads:
@@ -100,14 +86,12 @@ rule sort_dna_bam:
         """
 
 # Separate unique aligned reads and multi-aligned reads with length > 30
-# TODO: make sure how to separate multi-align reads? or reads map to repeat regions in the genome?
-# TODO right now, we are just using mapq == 1 as multi-align reads, but this might not be right
 rule split_unique_and_multi_align_bam_dna:
     input:
-        bam = bam_dir + "/{cell_id}.hisat3n_dna.bam",
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.bam"
     output:
-        unique=temp(bam_dir + "/{cell_id}.hisat3n_dna.unique_align.bam"),
-        multi=temp(bam_dir + "/{cell_id}.hisat3n_dna.multi_align.bam")
+        unique=temp(bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam"),
+        multi=temp(bam_dir+"/{cell_id}.hisat3n_dna.multi_align.bam")
     run:
         separate_unique_and_multi_align_reads(
             in_bam_path=input.bam,
@@ -118,13 +102,12 @@ rule split_unique_and_multi_align_bam_dna:
             qlen_cutoff=30
         )
 
-# remove PCR duplicates
-rule dedup_multi_bam:
+rule mc_dedup_unique_bam:
     input:
-        bam=bam_dir+"/{cell_id}.hisat3n_dna.multi_align.bam"
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.unique_align.bam"
     output:
-        bam="bam/{cell_id}.hisat3n_dna.multi_align.deduped.bam",
-        stats="bam/{cell_id}.hisat3n_dna.multi_align.deduped.matrix.txt"
+        bam="bam/{cell_id}.hisat3n_dna.unique_align.deduped.bam",
+        stats="bam/{cell_id}.hisat3n_dna.unique_align.deduped.matrix.txt"
     resources:
         mem_mb=2000
     threads:
@@ -134,25 +117,46 @@ rule dedup_multi_bam:
         picard MarkDuplicates -I {input.bam} -O {output.bam} -M {output.stats} -REMOVE_DUPLICATES true -TMP_DIR bam/temp/
         """
 
-rule select_multi_bam_dna_reads:
+# ==================================================
+# Generate ALLC
+# ==================================================
+rule unique_reads_allc:
     input:
-        bam="bam/{cell_id}.hisat3n_dna.multi_align.deduped.bam"
+        bam="bam/{cell_id}.hisat3n_dna.unique_align.deduped.bam",
+        bai="bam/{cell_id}.hisat3n_dna.unique_align.deduped.bam.bai"
     output:
-        bam="bam/{cell_id}.hisat3n_dna.multi_align.deduped.dna_reads.bam",
-        stats="bam/{cell_id}.hisat3n_dna.multi_align.deduped.dna_reads.reads_mch_frac.csv"
-
+        allc="allc/{cell_id}.allc.tsv.gz",
+        tbi="allc/{cell_id}.allc.tsv.gz.tbi",
+        stats="allc/{cell_id}.allc.tsv.gz.count.csv"
+    threads:
+        1.5
     resources:
-        mem_mb=100
-    run:
-        select_mct_reads(
-            input_bam=input.bam,
-            output_bam=output.bam,
-            mode='dna',
-            mc_rate_max_threshold=0.5,
-            cov_min_threshold=3,
-            nome=False
-        )
+        mem_mb=500
+    shell:
+        """
+        mkdir -p {allc_dir}
+        allcools bam-to-allc --bam_path {input.bam} \
+--reference_fasta {config[reference_fasta]} --output_path {output.allc} \
+--num_upstr_bases {config[num_upstr_bases]} \
+--num_downstr_bases {config[num_downstr_bases]} \
+--compress_level {config[compress_level]} --save_count_df \
+--convert_bam_strandness
+        """
 
+rule dedup_multi_bam: #dedup_unique_bam is included in mc.smk
+    input:
+        bam=bam_dir+"/{cell_id}.hisat3n_dna.multi_align.bam"
+    output:
+        bam="bam/{cell_id}.hisat3n_dna.multi_align.deduped.bam",
+        stats="bam/{cell_id}.hisat3n_dna.multi_align.deduped.matrix.txt"
+    resources:
+        mem_mb=3000
+    threads:
+        2
+    shell:
+        """
+        picard MarkDuplicates -I {input.bam} -O {output.bam} -M {output.stats} -REMOVE_DUPLICATES true -TMP_DIR bam/temp/
+        """
 
 # ==================================================
 # Generate ALLC
@@ -167,12 +171,13 @@ rule index_bam:
         samtools index {input.bam}
         """
 
-rule multi_reads_allc:
+rule multi_reads_allc: #unique reads allc is included in rule: mc_unique_reads_allc from mc.smk
     input:
-        bam = "bam/{cell_id}.hisat3n_dna.multi_align.deduped.dna_reads.bam",
-        bai = "bam/{cell_id}.hisat3n_dna.multi_align.deduped.dna_reads.bam.bai"
+        bam="bam/{cell_id}.hisat3n_dna.multi_align.deduped.bam",
+        bai="bam/{cell_id}.hisat3n_dna.multi_align.deduped.bam.bai"
     output:
         allc="allc-multi/{cell_id}.allc_multi.tsv.gz",
+        tbi="allc-multi/{cell_id}.allc_multi.tsv.gz.tbi",
         stats="allc-multi/{cell_id}.allc_multi.tsv.gz.count.csv"
     threads:
         1.5
@@ -183,7 +188,7 @@ rule multi_reads_allc:
         mkdir -p {allc_multi_dir}
         allcools bam-to-allc --bam_path {input.bam} \
 --reference_fasta {config[reference_fasta]} --output_path {output.allc} \
---cpu {threads} --num_upstr_bases {config[num_upstr_bases]} \
+--num_upstr_bases {config[num_upstr_bases]} \
 --num_downstr_bases {config[num_downstr_bases]} \
 --compress_level {config[compress_level]} --save_count_df \
 --min_mapq 0 --convert_bam_strandness

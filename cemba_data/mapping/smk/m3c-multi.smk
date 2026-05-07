@@ -1,8 +1,11 @@
 import os,sys
-import cemba_data
-PACKAGE_DIR=cemba_data.__path__[0]
+import pathlib
+import cemba_data.mapping
+from cemba_data.mapping import *
+
+SMK_DIR = pathlib.Path(cemba_data.mapping.__file__).parent / 'smk'
 include:
-    os.path.join(PACKAGE_DIR,"files","smk",'hisat3n_base.smk')
+    SMK_DIR / 'hisat3n_base.smk'
 
 # ==================================================
 # Mapping summary
@@ -54,7 +57,7 @@ rule summary:
 module hisat3n:
     snakefile:
         # here, plain paths, URLs and the special markers for code hosting providers (see below) are possible.
-        os.path.join(PACKAGE_DIR,"files","smk",'hisat3n.smk')
+        SMK_DIR / 'hisat3n.smk'
     config: config
 
 use rule * from hisat3n as hisat3n_*

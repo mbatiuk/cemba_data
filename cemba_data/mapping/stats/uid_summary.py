@@ -1,6 +1,6 @@
 import os
-
-from .stats_parser import *
+import pandas as pd
+from .parser import *
 
 
 def snmc_summary(outname="MappingSummary.csv.gz",indir="."):

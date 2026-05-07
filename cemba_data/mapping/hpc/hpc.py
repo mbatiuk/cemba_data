@@ -1,6 +1,6 @@
 import pathlib
 import pandas as pd
-from ...utilities import get_configuration
+from cemba_data.utilities import get_configuration
 
 
 def write_qsub_commands(output_dir, cores_per_job, total_memory_gb=None,

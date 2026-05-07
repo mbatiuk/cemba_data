@@ -1,9 +1,12 @@
 import os,sys
-import cemba_data
-PACKAGE_DIR=cemba_data.__path__[0]
+import pathlib
+import cemba_data.mapping
+from cemba_data.mapping import *
 
+SMK_DIR = pathlib.Path(cemba_data.mapping.__file__).parent / 'smk'
 include:
-    os.path.join(PACKAGE_DIR,"files","smk",'hisat3n.smk')
+    SMK_DIR / 'hisat3n.smk'
+
 
 # mhap_dir=config['mhap_dir']
 # ==================================================
@@ -70,7 +73,7 @@ rule bam_to_mhap:
     resources:
         mem_mb=400
     run:
-        from cemba_data.mapping.pipelines import bam2mhap
+        from cemba_data.mapping import bam2mhap
         if not os.path.exists(mhap_dir):
             os.mkdir(mhap_dir)
         outfile1=output.mhap1[:-3] #"allc/{cell_id}.mhap", will be bgzipped and tabix indexed in mhap

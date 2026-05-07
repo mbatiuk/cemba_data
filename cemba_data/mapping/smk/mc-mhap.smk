@@ -1,8 +1,11 @@
 import os,sys
-import cemba_data
-PACKAGE_DIR=cemba_data.__path__[0]
+import pathlib
+import cemba_data.mapping
+from cemba_data.mapping import *
+
+SMK_DIR = pathlib.Path(cemba_data.mapping.__file__).parent / 'smk'
 include:
-    os.path.join(PACKAGE_DIR,"files","smk",'hisat3n_base.smk')
+    SMK_DIR / 'hisat3n_base.smk'
 
 # the summary rule is the final target
 rule summary:
@@ -18,6 +21,12 @@ rule summary:
         expand("allc/{cell_id}.allc.tsv.gz.count.csv", cell_id=CELL_IDS),
         expand("allc/{cell_id}.allc.tsv.gz",cell_id=CELL_IDS),
         expand("allc/{cell_id}.allc.tsv.gz.tbi",cell_id=CELL_IDS),
+
+        # mhap
+        expand("mhap/{cell_id}.CG.mhap.gz",cell_id=CELL_IDS),
+        expand("mhap/{cell_id}.CG.mhap.gz.tbi",cell_id=CELL_IDS),
+        expand("mhap/{cell_id}.CH.mhap.gz", cell_id=CELL_IDS),
+        expand("mhap/{cell_id}.CH.mhap.gz.tbi",cell_id=CELL_IDS),
 
         # allc-CGN
         expand("allc-{mcg_context}/{cell_id}.{mcg_context}-Merge.allc.tsv.gz.tbi", cell_id=CELL_IDS, mcg_context=mcg_context),
@@ -38,10 +47,10 @@ rule summary:
 module hisat3n:
     snakefile:
         # here, plain paths, URLs and the special markers for code hosting providers (see below) are possible.
-        os.path.join(PACKAGE_DIR,"files","smk",'hisat3n.smk')
+        SMK_DIR / 'hisat3n.smk'
     config: config
 
-# use rule * from hisat3n exclude unique_reads_allc,hisat_3n_pair_end_mapping_dna_mode,index_bam as hisat3n_*
+# use rule * from hisat3n exclude dedup,unique_reads_allc,hisat_3n_pair_end_mapping_dna_mode,index_bam as hisat3n_*
 use rule sort_fq,trim,unique_reads_cgn_extraction from hisat3n as hisat3n_*
 
 rule hisat_3n_pair_end_mapping_dna_mode:
@@ -57,6 +66,7 @@ rule hisat_3n_pair_end_mapping_dna_mode:
         mem_mb=14000
     shell: # -q 10 will filter out multi-aligned reads
         """
+        mkdir -p {bam_dir}
         hisat-3n {config[hisat3n_dna_reference]} -q  -1 {input.R1} -2 {input.R2} \
 --directional-mapping-reverse --base-change C,T {repeat_index_flag} \
 --no-spliced-alignment --no-temp-splicesite -t  --new-summary \
@@ -84,7 +94,7 @@ rule mc_dedup_unique_bam:
         bam="bam/{cell_id}.hisat3n_dna.unique_align.deduped.bam",
         stats="bam/{cell_id}.hisat3n_dna.unique_align.deduped.matrix.txt"
     resources:
-        mem_mb=4000
+        mem_mb=2000
     threads:
         2
     shell:
@@ -128,3 +138,27 @@ rule unique_reads_allc:
 --convert_bam_strandness
         """
 
+# Convert bam to mhap
+rule bam_to_mhap:
+    input: #sorted bam
+        bam="bam/{cell_id}.hisat3n_dna.unique_align.deduped.bam",
+        bai="bam/{cell_id}.hisat3n_dna.unique_align.deduped.bam.bai"
+    output:
+        mhap1="mhap/{cell_id}.CG.mhap.gz",
+        tbi1="mhap/{cell_id}.CG.mhap.gz.tbi",
+        mhap2="mhap/{cell_id}.CH.mhap.gz",
+        tbi2="mhap/{cell_id}.CH.mhap.gz.tbi"
+    params:
+        annotation=os.path.expanduser(config.get('annotation_path',None)),
+    resources:
+        mem_mb=400
+    run:
+        from cemba_data.mapping import bam2mhap
+        if not os.path.exists(mhap_dir):
+            os.mkdir(mhap_dir)
+        outfile1 = output.mhap1[:-3]  #"allc/{cell_id}.mhap", will be bgzipped and tabix indexed in mhap
+        bam2mhap(bam_path=input.bam,annotation=params.annotation,
+            output=outfile1,pattern="CGN")
+        outfile2 = output.mhap2[:-3]
+        bam2mhap(bam_path=input.bam,annotation=params.annotation,
+            output=outfile2,pattern="CHN")
