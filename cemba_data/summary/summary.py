@@ -41,8 +41,23 @@ def get_plate_info(cell_ids):
 # It will also add Plate, PCRIndex, RandomIndex, Col384, and Row384 metadata
 # And it will also write ALLC path file for generating MCDS
 
-def final_summary(output_dir, notebook=None, mode='m3c', kernel_name='python3'):
+def final_summary(output_dir, notebook=None, mode=None, kernel_name='python3'):
     output_dir = pathlib.Path(output_dir).absolute()
+
+    # Auto-detect mode from the mapping config saved in the output directory
+    if mode is None:
+        config_path = output_dir / 'mapping_config.ini'
+        if config_path.exists():
+            import configparser
+            cfg = configparser.ConfigParser()
+            cfg.read(config_path)
+            mode = cfg.get('mode', 'mode', fallback=None)
+        if mode is None:
+            raise ValueError(
+                'Could not determine mode automatically. '
+                'Please specify --mode (e.g. mc, mct, or m3c).'
+            )
+
     mode = mode.split('-')[0]
 
     # Ensure all UID dirs with a Snakefile also have MappingSummary (successful run)

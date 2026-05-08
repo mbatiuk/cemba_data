@@ -429,8 +429,8 @@ def summary_register_subparser(subparser):
         '-m',
         type=str,
         required=False,
-        default='m3c',
-        help="mode"
+        default=None,
+        help="Mapping mode (e.g. mc, mct, or m3c). If not provided, auto-detected from output_dir/mapping_config.ini."
     )
 
     parser_req.add_argument(
