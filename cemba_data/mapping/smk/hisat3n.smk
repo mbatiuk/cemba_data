@@ -43,7 +43,7 @@ rule trim:
         """
         cutadapt -a R1Adapter={config[r1_adapter]} \
 -A R2Adapter={config[r2_adapter]} --report=minimal \
--O 6 -q 20 -u {config[r1_left_cut]} -u -{config[r1_right_cut]} \
+-O {config[overlap]} -q {config[quality_threshold]} -u {config[r1_left_cut]} -u -{config[r1_right_cut]} \
 -U {config[r2_left_cut]} -U -{config[r2_right_cut]} -Z \
 -m {config[min_read_length]}:{config[min_read_length]} \
 --pair-filter 'both' -o {output.R1} -p {output.R2} \

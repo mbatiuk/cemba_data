@@ -91,7 +91,7 @@ rule trim:
 -g 5PpolyT=XTTTTTTTTTTTTTTT \
 -g 5PpolyA=XAAAAAAAAAAAAAAA -G 5PpolyT=XTTTTTTTTTTTTTTT \
 -G 5PpolyA=XAAAAAAAAAAAAAAA --report=minimal \
--O 6 -q 20 -u {config[r1_left_cut]} -u -{config[r1_right_cut]} -U {config[r2_left_cut]} \
+-O {config[overlap]} -q {config[quality_threshold]} -u {config[r1_left_cut]} -u -{config[r1_right_cut]} -U {config[r2_left_cut]} \
 -U -{config[r2_right_cut]} -Z -m {config[min_read_length]}:{config[min_read_length]} \
 --pair-filter 'both' -o {output.R1} -p {output.R2} {input.R1} {input.R2} > {output.stats}
         """
