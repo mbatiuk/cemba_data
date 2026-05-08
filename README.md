@@ -119,6 +119,14 @@ yap default-mapping-config --mode mc-multi \
     --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" > mc_multi_config.ini
 ```
 
+### mc-multi nome - multi-mapping reads retained during mc + NOME
+```shell
+yap default-mapping-config --mode mc-multi --nome\
+    --genome_fasta "~/genomes/mus/mm10_chrL.fa" \
+    --chrom_size_path "~/genomes/mus/mm10.sizes" \
+    --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" > mc_multi_config.ini
+```
+
 ### mct-multi - multi-mapping reads retained during mct
 ```shell
 yap default-mapping-config --mode mct-multi \
@@ -128,6 +136,17 @@ yap default-mapping-config --mode mct-multi \
     --gtf "~/genomes/mus/annotation.gtf" \
     --chrom_size_path "~/genomes/mus/mm10.sizes" > mct_multi_config.ini
 ```
+
+### mct-multi nome - multi-mapping reads retained during mct + NOME
+```shell
+yap default-mapping-config --mode mct-multi --nome\
+    --genome_fasta "~/genomes/mus/mm10_chrL.fa" \
+    --hisat3n_dna_ref "~/genomes/mus/hisat/hisat" \
+    --hisat3n_rna_ref "~/genomes/mus/hisat_rna/hisat_rna" \
+    --gtf "~/genomes/mus/annotation.gtf" \
+    --chrom_size_path "~/genomes/mus/mm10.sizes" > mct_multi_config.ini
+```
+
 **Attention**, `--hisat3n_dna_ref` expects prefix of each hisat genome file, not the directory path.
 If genome index directory `~/genomes/mus/hisat/` contains files `hisat.3n.CT.1.ht2` `hisat.3n.CT.2.ht2` etc you need to specify `--hisat3n_dna_ref "~/genomes/mus/hisat/hisat"` in the command.
 
@@ -142,10 +161,15 @@ During NOMe variant the GCH contain open chromatin information, HCN contain norm
 | :--- | :--- |
 | **`m3c`** | `yap default-mapping-config --mode m3c ...` |
 | **`m3c-multi`** | `yap default-mapping-config --mode m3c-multi ...` |
-| **`mc-nome`** | `yap default-mapping-config --mode mc --nome ...` |
+| **`mc`** | `yap default-mapping-config --mode mc ...` |
+| **`mc nome`** | `yap default-mapping-config --mode mc --nome ...` |
 | **`mc-multi`** | `yap default-mapping-config --mode mc-multi ...` |
-| **`mct-nome`** | `yap default-mapping-config --mode mct --nome ...` |
+| **`mc-multi nome`** | `yap default-mapping-config --mode mc-multi --nome ...` |
+| **`mct`** | `yap default-mapping-config --mode mct ...` |
+| **`mct nome`** | `yap default-mapping-config --mode mct --nome ...` |
 | **`mct-multi`** | `yap default-mapping-config --mode mct-multi ...` |
+| **`mct-multi nome`** | `yap default-mapping-config --mode mct-multi --nome ...` |
+
 
 ## Demultiplex
 
