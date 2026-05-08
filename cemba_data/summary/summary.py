@@ -1,3 +1,4 @@
+import configparser
 import pathlib
 import pandas as pd
 from papermill import execute_notebook, PapermillExecutionError
@@ -48,7 +49,6 @@ def final_summary(output_dir, notebook=None, mode=None, kernel_name='python3'):
     if mode is None:
         config_path = output_dir / 'mapping_config.ini'
         if config_path.exists():
-            import configparser
             cfg = configparser.ConfigParser()
             cfg.read(config_path)
             mode = cfg.get('mode', 'mode', fallback=None)
