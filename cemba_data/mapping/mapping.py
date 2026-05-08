@@ -309,8 +309,6 @@ def m3c_config_str(config):
         'hisat3n_dna_reference': 'required',
         'hisat3n_repeat_index_type': 'no-repeat',
         'reference_fasta': 'required',
-        'mc_stat_feature': 'CHN CGN CCC',
-        'mc_stat_alias': 'mCH mCG mCCC',
         'chrom_size_path': 'required',
         'annotation_path': None,
         'post_mapping_script': 'true',
@@ -371,8 +369,6 @@ def mc_config_str(config):
         'hisat3n_repeat_index_type': 'no-repeat',
         'reference_fasta': 'required',
         'chrom_size_path': 'required',
-        'mc_stat_feature': 'CHN CGN CCC',
-        'mc_stat_alias': 'mCH mCG mCCC',
         'annotation_path': None,
         'post_mapping_script': 'true',
 		# optional script executed after mapping, before final summary.
@@ -442,8 +438,6 @@ def mct_config_str(config):
         'feature_type': 'gene',
         'id_type': 'gene_id',
         'nome_flag_str': 'required',
-        'mc_stat_feature': 'CHN CGN CCC',
-        'mc_stat_alias': 'mCH mCG mCCC',
         'annotation_path': None,
         'post_mapping_script': 'true',
 		# optional script executed after mapping, before final summary.
