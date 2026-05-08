@@ -117,8 +117,8 @@ rule split_unique_and_multi_align_bam_dna:
             out_unique_path=output.unique,
             out_multi_path=output.multi,
             out_unmappable_path=None,
-            mapq_cutoff=10,
-            qlen_cutoff=30
+            mapq_cutoff=config['mapq_threshold'],
+            qlen_cutoff=config['min_read_length']
         )
 
 # remove PCR duplicates
@@ -151,8 +151,8 @@ rule select_multi_bam_dna_reads:
             input_bam=input.bam,
             output_bam=output.bam,
             mode='dna',
-            mc_rate_max_threshold=0.5,
-            cov_min_threshold=3,
+            mc_rate_max_threshold=config['mc_rate_max_threshold'],
+            cov_min_threshold=config['dna_cov_min_threshold'],
             nome=False
         )
 

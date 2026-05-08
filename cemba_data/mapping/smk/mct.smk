@@ -107,12 +107,12 @@ rule hisat_3n_pair_end_mapping_dna_mode:
         config['hisat3n_threads']
     resources:
         mem_mb=14000
-    shell: # -q 10 will filter out multi-aligned reads
+    shell: # -q {config[mapq_threshold]} will filter out multi-aligned reads
         """
         hisat-3n {config[hisat3n_dna_reference]} -q  -1 {input.R1} -2 {input.R2} \
 --directional-mapping-reverse --base-change C,T {repeat_index_flag} \
 --no-spliced-alignment --no-temp-splicesite -t  --new-summary \
---summary-file {output.stats} --threads {threads} | samtools view -b -q 10 -o {output.bam}
+--summary-file {output.stats} --threads {threads} | samtools view -b -q {config[mapq_threshold]} -o {output.bam}
         """
 
 rule sort_dna_bam:
@@ -154,14 +154,11 @@ rule select_unique_bam_dna_reads:
     resources:
         mem_mb=100
     run:
-        select_mct_reads(
-            input_bam=input.bam,
-            output_bam=output.bam,
-            mode='dna',
-            mc_rate_max_threshold=0.5,
-            cov_min_threshold=3,
-            nome=False
-        )
+        select_mct_reads(input_bam=input.bam,
+                         output_bam=output.bam,
+                         mode='dna',
+                         mc_rate_max_threshold=config['mc_rate_max_threshold'],
+                         cov_min_threshold=config['dna_cov_min_threshold'])
 
 # ==================================================
 # HISAT-3N RNA Mapping
@@ -184,7 +181,7 @@ rule hisat2_pairend_mapping_rna_mode:
         hisat2 -x {config[hisat3n_rna_reference]} -q -1 {input.R1} -2 {input.R2} -t --new-summary \
 --summary-file {output.stats} --threads {threads} \
 | samtools addreplacerg -r '@RG\tID:{wildcards.cell_id}' -u -o - - \
-| samtools view -b -q 10 -o {output.bam}
+| samtools view -b -q {config[mapq_threshold]} -o {output.bam}
         """
 
 rule sort_rna_bam:
@@ -211,14 +208,11 @@ rule select_unique_bam_rna_reads:
     resources:
         mem_mb=100
     run:
-        select_mct_reads(
-            input_bam=input.bam,
-            output_bam=output.bam,
-            mode='rna',
-            mc_rate_min_threshold=0.9,
-            cov_min_threshold=3,
-            nome=False
-        )
+        select_mct_reads(input_bam=input.bam,
+                         output_bam=output.bam,
+                         mode='rna',
+                         mc_rate_min_threshold=config['mc_rate_min_threshold'],
+                         cov_min_threshold=config['rna_cov_min_threshold'])
 
 rule feature_count:
     input:

@@ -93,7 +93,7 @@ rule separate_unmapped_reads:
                                               out_multi_path=output.multi_bam,
                                               out_unmappable_path=output.unmapped_fastq,
                                               unmappable_format='fastq',
-                                              mapq_cutoff=10,
+                                              mapq_cutoff=config['mapq_threshold'],
                                               qlen_cutoff=config['min_read_length'])
 
 
@@ -135,7 +135,7 @@ rule hisat_3n_single_end_mapping_dna_mode:
         hisat-3n {config[hisat3n_dna_reference]} -q -U {input.fastq} \
 {params.direction} --base-change C,T {repeat_index_flag} \
 --no-spliced-alignment --no-temp-splicesite -t --new-summary --summary-file {output.stats} \
---threads {threads} | samtools view -b -q 10 -o {output.bam}
+--threads {threads} | samtools view -b -q {config[mapq_threshold]} -o {output.bam}
         """
         # # only take the unique aligned reads
 
