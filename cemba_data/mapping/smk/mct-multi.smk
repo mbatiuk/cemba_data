@@ -153,7 +153,7 @@ rule select_multi_bam_dna_reads:
             mode='dna',
             mc_rate_max_threshold=config['mc_rate_max_threshold'],
             cov_min_threshold=config['dna_cov_min_threshold'],
-            nome=False
+            nome=config.get('nome', 'False') == 'True'
         )
 
 

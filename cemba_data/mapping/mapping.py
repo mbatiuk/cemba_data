@@ -437,7 +437,7 @@ def mct_config_str(config):
         'gtf_path': 'required',
         'feature_type': 'gene',
         'id_type': 'gene_id',
-        'nome_flag_str': 'required',
+        'nome': 'False',
         'annotation_path': None,
         'post_mapping_script': 'true',
 		# optional script executed after mapping, before final summary.

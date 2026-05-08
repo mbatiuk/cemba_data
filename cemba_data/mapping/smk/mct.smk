@@ -158,7 +158,8 @@ rule select_unique_bam_dna_reads:
                          output_bam=output.bam,
                          mode='dna',
                          mc_rate_max_threshold=config['mc_rate_max_threshold'],
-                         cov_min_threshold=config['dna_cov_min_threshold'])
+                         cov_min_threshold=config['dna_cov_min_threshold'],
+                         nome=config.get('nome', 'False') == 'True')
 
 # ==================================================
 # HISAT-3N RNA Mapping
@@ -212,7 +213,8 @@ rule select_unique_bam_rna_reads:
                          output_bam=output.bam,
                          mode='rna',
                          mc_rate_min_threshold=config['mc_rate_min_threshold'],
-                         cov_min_threshold=config['rna_cov_min_threshold'])
+                         cov_min_threshold=config['rna_cov_min_threshold'],
+                         nome=config.get('nome', 'False') == 'True')
 
 rule feature_count:
     input:
