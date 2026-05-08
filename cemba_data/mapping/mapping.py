@@ -71,7 +71,7 @@ def make_all_snakefile(output_dir, subdir=None,
 		raise ValueError(f"No cell fastq were identified under {sub_folder}/fastq")
 	cell_id_str = f'CELL_IDS = {cell_ids}\n'
 
-	total_snakefile = cell_id_str + snake_template
+	total_snakefile = cell_id_str + config_str + snake_template
 	if not os.path.exists(os.path.join(output_dir, 'snakemake')):
 		os.makedirs(os.path.join(output_dir, 'snakemake'), exist_ok=True)
 	subprocess.run(['touch', os.path.join(output_dir, 'snakemake/hisat3n')], check=True)
@@ -298,7 +298,8 @@ def m3c_config_str(config):
         'num_upstr_bases': 0,
         'num_downstr_bases': 2,
         'compress_level': 5,
-        'min_gap': 2500
+        'min_gap': 2500,
+        'hisat3n_threads': 11
     }
 
     str_parameters = {
@@ -311,7 +312,10 @@ def m3c_config_str(config):
         'mc_stat_feature': 'CHN CGN CCC',
         'mc_stat_alias': 'mCH mCG mCCC',
         'chrom_size_path': 'required',
-        'annotation_path': None
+        'annotation_path': None,
+        'post_mapping_script': 'true',
+		# optional script executed after mapping, before final summary.
+		# default 'true' is a no-op placeholder. replace with path to your script.
     }
 
     typed_config = {}
@@ -335,13 +339,11 @@ def m3c_config_str(config):
                 raise ValueError(f'Required parameter {k} not found in config. '
                                  f'You can print the newest mapping config template via "yap default-mapping-config".')
 
-    config_str = ""
+    config_str = "config = {\n"
     for k, v in typed_config.items():
-        config_str += f"{k} = {v}\n"
+        config_str += f"    '{k}': {v},\n"
+    config_str += "}\n"
     return config_str
-
-
-
 
 
 def mc_config_str(config):
@@ -357,7 +359,8 @@ def mc_config_str(config):
         'mapq_threshold': 10,
         'num_upstr_bases': 0,
         'num_downstr_bases': 2,
-        'compress_level': 5
+        'compress_level': 5,
+        'hisat3n_threads': 11
     }
 
     str_parameters = {
@@ -370,7 +373,10 @@ def mc_config_str(config):
         'chrom_size_path': 'required',
         'mc_stat_feature': 'CHN CGN CCC',
         'mc_stat_alias': 'mCH mCG mCCC',
-        'annotation_path': None
+        'annotation_path': None,
+        'post_mapping_script': 'true',
+		# optional script executed after mapping, before final summary.
+		# default 'true' is a no-op placeholder. replace with path to your script.
     }
 
     typed_config = {}
@@ -393,9 +399,10 @@ def mc_config_str(config):
                 raise ValueError(f'Required parameter {k} not found in config. '
                                  f'You can print the newest mapping config template via "yap default-mapping-config".')
 
-    config_str = ""
+    config_str = "config = {\n"
     for k, v in typed_config.items():
-        config_str += f"{k} = {v}\n"
+        config_str += f"    '{k}': {v},\n"
+    config_str += "}\n"
     return config_str
 
 
@@ -414,7 +421,8 @@ def mct_config_str(config):
         'num_downstr_bases': 2,
         'compress_level': 5,
         'dna_cov_min_threshold': 3,
-        'rna_cov_min_threshold': 3
+        'rna_cov_min_threshold': 3,
+        'hisat3n_threads': 11
     }
 
     float_parameters = {
@@ -436,7 +444,10 @@ def mct_config_str(config):
         'nome_flag_str': 'required',
         'mc_stat_feature': 'CHN CGN CCC',
         'mc_stat_alias': 'mCH mCG mCCC',
-        'annotation_path': None
+        'annotation_path': None,
+        'post_mapping_script': 'true',
+		# optional script executed after mapping, before final summary.
+		# default 'true' is a no-op placeholder. replace with path to your script.
     }
     typed_config = {}
     for k, default in int_parameters.items():
@@ -467,9 +478,10 @@ def mct_config_str(config):
                 raise ValueError(f'Required parameter {k} not found in config. '
                                  f'You can print the newest mapping config template via "yap default-mapping-config".')
 
-    config_str = ""
+    config_str = "config = {\n"
     for k, v in typed_config.items():
-        config_str += f"{k} = {v}\n"
+        config_str += f"    '{k}': {v},\n"
+    config_str += "}\n"
     return config_str
 
 

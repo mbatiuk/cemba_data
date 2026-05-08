@@ -1,51 +1,7 @@
 import pathlib
 from collections import defaultdict
 import pandas as pd
-import yaml
-import pysam
 from pysam import TabixFile
-from cemba_data.utilities import get_configuration
-
-
-def _read_yaml_config(config_path):
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
-    return config
-
-
-def _read_ini_config(config_path):
-    return get_configuration(config_path)
-
-
-def read_mapping_config(cwd: str = '.'):
-    tried = []
-    yaml_path = None
-    for name in ['config', 'mapping_config']:
-        for config_dir in [cwd, f'{cwd}/..']:
-            for suffix in ['yaml', 'yml']:
-                path = f'{config_dir}/{name}.{suffix}'
-                tried.append(path)
-                if pathlib.Path(path).exists():
-                    yaml_path = path
-    default_path = '~/mapping_config.yaml'
-    if pathlib.Path(default_path).exists():
-        yaml_path = default_path
-
-    ini_path = None
-    for name in ['config', 'mapping_config']:
-        for config_dir in [cwd, f'{cwd}/..']:
-            path = f'{config_dir}/{name}.ini'
-            tried.append(path)
-            if pathlib.Path(path).exists():
-                ini_path = path
-
-    if yaml_path is not None:
-        config = _read_yaml_config(yaml_path)
-    elif ini_path is not None:
-        config = _read_ini_config(ini_path)
-    else:
-        config = {}
-    return config
 
 
 def get_allc_lambda_frac(allc_list, num_upstr_bases):

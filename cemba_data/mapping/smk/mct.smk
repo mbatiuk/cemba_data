@@ -176,12 +176,12 @@ rule hisat2_pairend_mapping_rna_mode:
         bam= temp(bam_dir + "/{cell_id}.hisat3n_rna.unsort.bam"),
         stats="bam/{cell_id}.hisat3n_rna_summary.txt",
     threads:
-        config["hisat_threads"]
+        config["hisat3n_threads"]
     resources:
         mem_mb=8000
     shell: # add read group @RG to the reads in order to use featuerCounts
         """
-        hisat2 -x {config[hisat_rna_reference]} -q -1 {input.R1} -2 {input.R2} -t --new-summary \
+        hisat2 -x {config[hisat3n_rna_reference]} -q -1 {input.R1} -2 {input.R2} -t --new-summary \
 --summary-file {output.stats} --threads {threads} \
 | samtools addreplacerg -r '@RG\tID:{wildcards.cell_id}' -u -o - - \
 | samtools view -b -q 10 -o {output.bam}
