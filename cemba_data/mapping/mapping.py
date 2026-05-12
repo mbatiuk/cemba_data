@@ -284,6 +284,48 @@ def separate_unique_and_multi_align_reads(in_bam_path,
 	return
 
 
+def _build_config_str(config, int_parameters, str_parameters, float_parameters=None):
+    """Build a typed config dict and serialize it to a Snakemake config string."""
+    typed_config = {}
+
+    for k, default in int_parameters.items():
+        if k in config:
+            typed_config[k] = int(config[k])
+        else:
+            if default != 'required':
+                typed_config[k] = default
+            else:
+                raise ValueError(f'Required parameter {k} not found in config. '
+                                 f'You can print the newest mapping config template via "yap default-mapping-config".')
+
+    if float_parameters:
+        for k, default in float_parameters.items():
+            if k in config:
+                typed_config[k] = float(config[k])
+            else:
+                if default != 'required':
+                    typed_config[k] = default
+                else:
+                    raise ValueError(f'Required parameter {k} not found in config. '
+                                     f'You can print the newest mapping config template via "yap default-mapping-config".')
+
+    for k, default in str_parameters.items():
+        if k in config:
+            typed_config[k] = f"'{config[k]}'"
+        else:
+            if default != 'required':
+                typed_config[k] = f"'{default}'"
+            else:
+                raise ValueError(f'Required parameter {k} not found in config. '
+                                 f'You can print the newest mapping config template via "yap default-mapping-config".')
+
+    config_str = "config = {\n"
+    for k, v in typed_config.items():
+        config_str += f"    '{k}': {v},\n"
+    config_str += "}\n"
+    return config_str
+
+
 def m3c_config_str(config):
     """Change the dtype of parameters and make a appropriate string"""
     int_parameters = {
@@ -316,32 +358,7 @@ def m3c_config_str(config):
 		# default 'true' is a no-op placeholder. replace with path to your script.
     }
 
-    typed_config = {}
-    for k, default in int_parameters.items():
-        if k in config:
-            typed_config[k] = int(config[k])
-        else:
-            if default != 'required':
-                typed_config[k] = default
-            else:
-                raise ValueError(f'Required parameter {k} not found in config. '
-                                 f'You can print the newest mapping config template via "yap default-mapping-config".')
-
-    for k, default in str_parameters.items():
-        if k in config:
-            typed_config[k] = f"'{config[k]}'"
-        else:
-            if default != 'required':
-                typed_config[k] = f"'{default}'"
-            else:
-                raise ValueError(f'Required parameter {k} not found in config. '
-                                 f'You can print the newest mapping config template via "yap default-mapping-config".')
-
-    config_str = "config = {\n"
-    for k, v in typed_config.items():
-        config_str += f"    '{k}': {v},\n"
-    config_str += "}\n"
-    return config_str
+    return _build_config_str(config, int_parameters, str_parameters)
 
 
 def mc_config_str(config):
@@ -375,31 +392,7 @@ def mc_config_str(config):
 		# default 'true' is a no-op placeholder. replace with path to your script.
     }
 
-    typed_config = {}
-    for k, default in int_parameters.items():
-        if k in config:
-            typed_config[k] = int(config[k])
-        else:
-            if default != 'required':
-                typed_config[k] = default
-            else:
-                raise ValueError(f'Required parameter {k} not found in config.')
-
-    for k, default in str_parameters.items():
-        if k in config:
-            typed_config[k] = f"'{config[k]}'"
-        else:
-            if default != 'required':
-                typed_config[k] = f"'{default}'"
-            else:
-                raise ValueError(f'Required parameter {k} not found in config. '
-                                 f'You can print the newest mapping config template via "yap default-mapping-config".')
-
-    config_str = "config = {\n"
-    for k, v in typed_config.items():
-        config_str += f"    '{k}': {v},\n"
-    config_str += "}\n"
-    return config_str
+    return _build_config_str(config, int_parameters, str_parameters)
 
 
 def mct_config_str(config):
@@ -425,6 +418,7 @@ def mct_config_str(config):
         'mc_rate_max_threshold': 0.5,
         'mc_rate_min_threshold': 0.9
     }
+	
     str_parameters = {
         'mode': 'mct',
         'r1_adapter': 'AGATCGGAAGAGCACACGTCTGAAC',
@@ -443,39 +437,6 @@ def mct_config_str(config):
 		# optional script executed after mapping, before final summary.
 		# default 'true' is a no-op placeholder. replace with path to your script.
     }
-    typed_config = {}
-    for k, default in int_parameters.items():
-        if k in config:
-            typed_config[k] = int(config[k])
-        else:
-            if default != 'required':
-                typed_config[k] = default
-            else:
-                raise ValueError(f'Required parameter {k} not found in config.')
 
-    for k, default in float_parameters.items():
-        if k in config:
-            typed_config[k] = float(config[k])
-        else:
-            if default != 'required':
-                typed_config[k] = default
-            else:
-                raise ValueError(f'Required parameter {k} not found in config.')
-
-    for k, default in str_parameters.items():
-        if k in config:
-            typed_config[k] = f"'{config[k]}'"
-        else:
-            if default != 'required':
-                typed_config[k] = f"'{default}'"
-            else:
-                raise ValueError(f'Required parameter {k} not found in config. '
-                                 f'You can print the newest mapping config template via "yap default-mapping-config".')
-
-    config_str = "config = {\n"
-    for k, v in typed_config.items():
-        config_str += f"    '{k}': {v},\n"
-    config_str += "}\n"
-    return config_str
-
+    return _build_config_str(config, int_parameters, str_parameters, float_parameters)
 
