@@ -12,8 +12,8 @@ bam_dir = "bam"
 allc_dir = "allc"
 
 mcg_context = 'CGN' if int(config['num_upstr_bases']) == 0 else 'HCGN'
-#repeat_index_flag = "--repeat" if config['hisat3n_repeat_index_type'] == 'repeat' else "--no-repeat-index"
-repeat_index_flag="--no-repeat-index" #repeat would cause some randomness, get different output (mapping summary) even using the same input and parameters
+repeat_index_flag = "--repeat" if config['hisat3n_repeat_index_type'] == 'repeat' else "--no-repeat-index"
+# repeat_index_flag="--no-repeat-index" #repeat would cause some randomness, get different output (mapping summary) even using the same input and parameters
 allc_mcg_dir=f"allc-{mcg_context}"
 
 for dir in [bam_dir, allc_dir, allc_mcg_dir]:
