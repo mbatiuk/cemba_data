@@ -353,6 +353,7 @@ def m3c_config_str(config):
         'reference_fasta': 'required',
         'chrom_size_path': 'required',
         'annotation_path': None,
+		# parameter for mhap pipeline
         'post_mapping_script': 'true',
 		# optional script executed after mapping, before final summary.
 		# default 'true' is a no-op placeholder. replace with path to your script.
@@ -387,6 +388,7 @@ def mc_config_str(config):
         'reference_fasta': 'required',
         'chrom_size_path': 'required',
         'annotation_path': None,
+		# parameter for mhap pipeline
         'post_mapping_script': 'true',
 		# optional script executed after mapping, before final summary.
 		# default 'true' is a no-op placeholder. replace with path to your script.
@@ -433,6 +435,7 @@ def mct_config_str(config):
         'id_type': 'gene_id',
         'nome': 'False',
         'annotation_path': None,
+		#parameter for mhap pipeline
         'post_mapping_script': 'true',
 		# optional script executed after mapping, before final summary.
 		# default 'true' is a no-op placeholder. replace with path to your script.
