@@ -379,6 +379,10 @@ def demultiplex_register_subparser(subparser):
     parser.add_argument("--output_dir", "-o", type=str, default="test", help="Output directory")
     parser.add_argument("--n_jobs", type=int, default=16, help="Number of jobs to run in parallel")
     parser.add_argument("--print_only", action="store_true", help="Print commands only")
+    parser.add_argument("--config_path", type=str, default=None,
+                        help="Path to mapping config .ini file. "
+                             "If provided, total_read_pairs_min and total_read_pairs_max "
+                             "are read from it.")
     return
 
 

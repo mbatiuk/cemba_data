@@ -6,6 +6,7 @@ import pathlib
 import re
 import pandas as pd
 import os
+from cemba_data.utilities import get_configuration
 
 MODULE_DIR = pathlib.Path(__file__).parent.absolute()
 
@@ -165,13 +166,21 @@ def get_random_index(UIDs, local_outdir="./"):
 	return df_index
 
 
-def demultiplex(fq_dir="fastq", output_dir="test", n_jobs=16, print_only=False):
+def demultiplex(fq_dir="fastq", output_dir="out", n_jobs=16, config_path=None, print_only=False):
 	"""
 	Run demultiplex on local machine.
 	"""
 	smk1 = MODULE_DIR /'demultiplex.smk'
 	cmd = f'snakemake -s {smk1} --scheduler greedy --printshellcmds --rerun-incomplete ' \
-	      f'--config fq_dir="{fq_dir}" outdir="{output_dir}" -j {n_jobs}'
+	      f'-j {n_jobs} --config fq_dir="{fq_dir}" outdir="{output_dir}"'
+
+	if config_path is not None:
+		user_config = get_configuration(config_path)
+		# Only append to the command if the specific keys exist in the .ini
+		if 'total_read_pairs_min' in user_config:
+			cmd += f' total_read_pairs_min={int(user_config["total_read_pairs_min"])}'
+		if 'total_read_pairs_max' in user_config:
+			cmd += f' total_read_pairs_max={int(user_config["total_read_pairs_max"])}'
 
 	print(cmd)
 	if not print_only:
