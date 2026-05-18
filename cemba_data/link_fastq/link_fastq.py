@@ -5,6 +5,17 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 
+def _normalize_lane(raw):
+    """Extract digits from a lane string and return L-prefixed zero-padded form.
+    e.g. 'L001' -> 'L001', 'l----1' -> 'L001', 'L3' -> 'L003', '2' -> 'L002'
+    """
+    digits = re.sub(r'\D', '', raw)
+    if not digits:
+        log.warning(f"Could not extract digits from lane value '{raw}', defaulting to L001.")
+        return 'L001'
+    return f'L{int(digits):03d}'
+
+
 def link_fastq(in_fq_dir, out_fq_dir,
                plate_pattern,
                read_type_pattern=r'(R[12])',
@@ -59,6 +70,11 @@ def link_fastq(in_fq_dir, out_fq_dir,
         except IndexError:
             plate = m.group(0)
 
+        if '-' in plate:
+            plate = plate.replace('-', '.')
+            log.warning(f"Plate name contained '-' which is reserved as a delimiter. "
+                        f"Replaced with '.' -> '{plate}'. Cell IDs will reflect this change.")
+
         # 2. Read type
         m = read_type_re.search(fname)
         if not m:
@@ -89,15 +105,15 @@ def link_fastq(in_fq_dir, out_fq_dir,
 
         # 4. Lane: manual > pattern > L001
         if lane:
-            resolved_lane = lane
+            resolved_lane = _normalize_lane(lane)
         elif lane_re:
             m = lane_re.search(fname)
             if m:
                 try:
-                    resolved_lane = m.group(1)
+                    raw_lane = m.group(1)
                 except IndexError:
-                    # No capturing group — use the whole match as the lane label
-                    resolved_lane = m.group(0)
+                    raw_lane = m.group(0)
+                resolved_lane = _normalize_lane(raw_lane)
             else:
                 resolved_lane = 'L001'
         else:
