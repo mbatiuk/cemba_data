@@ -175,6 +175,13 @@ During NOMe variant the GCH contain open chromatin information, HCN contain norm
 
 Raw sequencer outputs often have complex or inconsistent naming conventions. Use `link-fastq` to create symbolic links with standardized names: `{plate}-{multiplex_group}_{lane}_{read_type}.fastq.gz`.
 
+Make sure original raw fastq file names follow these minimal expectations:
+- `plate` name must not contain `-` characters. If by mistake `-` is present it will be converted to `.`
+- `multiplex_group` is absent or an integer 1–6
+- `lane` must contain number. `L1`, `1`, `L001`, `l10`, or even `L10000` will be standardized to `L001`, `L010` or `L10000`
+- `read_type` must contain `1` or `2` for correct standardization into `R1` and `R2`
+
+
 ```shell
 yap link-fastq \
     --in_fq_dir "raw_fastq_dir" \
