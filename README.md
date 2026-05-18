@@ -178,7 +178,7 @@ Raw sequencer outputs often have complex or inconsistent naming conventions. Use
 Make sure original raw fastq file names follow these minimal expectations:
 - `plate` name must not contain `-` characters. If by mistake `-` is present it will be converted to `.`
 - `multiplex_group` is absent or an integer 1–6
-- `lane` must contain number. `L1`, `1`, `L001`, `l10`, or even `L10000` will be standardized to `L001`, `L010` or `L10000`
+- `lane` is absent or contains number. `L1`, `1`, `L001`, `l10`, or even `L10000` will be standardized to `L001`, `L010` or `L10000`
 - `read_type` must contain `1` or `2` for correct standardization into `R1` and `R2`
 
 
@@ -200,7 +200,7 @@ yap link-fastq \
 - `-r` / `--read_type_pattern`: Regex for R1/R2. Default: `(R[12])`. The matched value must contain `1` or `2`.
 - `-g` / `--multiplex_group_pattern`: (optional) Regex for multiplex group. Use `()` to capture a sub-portion; without `()` the full match is used. If absent, `1` is used for all files.
 - `--lane_pattern`: (optional) Regex to extract lane from filename. Use `()` to capture a sub-portion; without `()` the full match is used. Ignored if `--lane` is set.
-- `-l` / `--lane`: (optional) Manually assign a lane name to all files in `in_fq_dir`. If you have files from multiple sequencing runs of the same library pool you can call `link-fastq` separately per run and use `--lane` to assign a distinct lane name to each run. The pipeline will then merge fastq files correctly. `L001` is used when neither `--lane_pattern` nor `--lane` is provided.
+- `-l` / `--lane`: (optional) Manually assign a lane name to all files in `in_fq_dir`. Number should be present in the `--lane` argument, e.g. `--lane 1` or `--lane L001`. If you have files from multiple sequencing runs of the same library pool you can call `link-fastq` separately per run and use `--lane` to assign a distinct lane number to each run. The pipeline will then merge fastq files correctly. `L001` is used when neither `--lane_pattern` nor `--lane` is provided.
 - `--recursive`: Search `in_fq_dir` recursively for FASTQ files.
 
 ### How to write patterns (Regular Expressions)
