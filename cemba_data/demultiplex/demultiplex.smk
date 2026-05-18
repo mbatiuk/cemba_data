@@ -59,8 +59,7 @@ rule summary_demultiplex:
         df_stats['real_multiplex_group']=df_stats.index_name.apply(lambda x:((int(x[1:])-1) % 12) // 2 + 1 if 'unknow' not in x.lower() else 'NA')
         df_stats=df_stats.loc[df_stats.real_multiplex_group !='NA']
         df_stats['plate']=df_stats['uid'].apply(lambda x:x.split('-')[0])
-        df_stats['primer_name']=df_stats['uid'].apply(lambda x:x.split('-')[-1])
-        df_stats['uid']= df_stats.plate.map(str)+'-'+df_stats.real_multiplex_group.map(str)+'-'+df_stats.primer_name.map(str)
+        df_stats['uid']= df_stats.plate.map(str)+'-'+df_stats.real_multiplex_group.map(str)
         df_stats['cell_id'] = df_stats['uid'] + '-' + df_stats['index_name']
         df_cell=df_stats.groupby('cell_id').agg({
                                         'Trimmed':'sum',
@@ -92,18 +91,18 @@ rule merge_lanes:
         shell(f"mkdir -p {params.outdir}")
         shell(f"cat {input.fqs} > {output.fq}")
 
-rule run_demultiplex: #{prefixes}-{plates}-{multiplex_groups}-{primer_names}_{pns}_{lanes}_{read_types}_{suffixes}.fastq.gz
-    input: #uid = {plate}-{multiplex_group}-{primer_name} # primer_name is pcr index?
+rule run_demultiplex: #{plate}-{multiplex_group}_{lane}_{read_type}.fastq.gz
+    input: #uid = {plate}-{multiplex_group}
         R1 = lambda wildcards: outdir+f"/{wildcards.uid}/R1.fq.gz",
         R2 = lambda wildcards: outdir+f"/{wildcards.uid}/R2.fq.gz"
 
     output: #uid, lane, index_name, read_type; dynamic: https://stackoverflow.com/questions/52598637/unknown-output-in-snakemake
-        stats_out = outdir+"/{uid}/demultiplex.stats.txt", # old_uid
+        stats_out = outdir+"/{uid}/demultiplex.stats.txt",
 
     params:
         # V2-single: use full 384 index fa; V2 standard: use per-multiplex-group fa
         random_index_fa=lambda wildcards: MODULE_DIR / 'random_index_v2' / 'random_index_v2.fa' if v2_single \
-                                    else MODULE_DIR / 'random_index_v2' / f'random_index_v2.multiplex_group_{wildcards.uid.split("-")[-2]}.fa',
+                                    else MODULE_DIR / 'random_index_v2' / f'random_index_v2.multiplex_group_{wildcards.uid.split("-")[1]}.fa',
         outdir=lambda wildcards: outdir+f"/{wildcards.uid}/demultiplex",
         R1=lambda wildcards: outdir+f"/{wildcards.uid}/demultiplex/{'{{name}}'}-R1.fq.gz",
         R2=lambda wildcards: outdir+f"/{wildcards.uid}/demultiplex/{'{{name}}'}-R2.fq.gz"
@@ -137,7 +136,7 @@ rule run_demultiplex: #{prefixes}-{plates}-{multiplex_groups}-{primer_names}_{pn
             real_multiplex_group=index_name2multiplex_group(index_name)
             if real_multiplex_group=='NA':
                 continue
-            new_uid='-'.join([uids[0],str(real_multiplex_group),uids[-1]])
+            new_uid='-'.join([uids[0], str(real_multiplex_group)])
             read_type = os.path.basename(input_fq).rstrip('.fq.gz').split('-')[-1]
             new_path=outdir+f"/{new_uid}/fastq/{new_uid}-{index_name}-{read_type}.fq.gz"
             if not os.path.exists(os.path.dirname(new_path)):

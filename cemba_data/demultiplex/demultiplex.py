@@ -12,29 +12,28 @@ MODULE_DIR = pathlib.Path(__file__).parent.absolute()
 
 def _parse_fastq_path(path):
     """
-    UID pattern: {sample_id_prefix}-{plate}-{multiplex_group}-{barcode_name}
-    FASTQ name pattern:
-    {sample_id_prefix}-{plate}-{multiplex_group}-{barcode_name}_{internal_info}_{lane}_{read_type}_{internal_info}.fastq.gz
+    UID pattern: {plate}-{multiplex_group}
+    FASTQ name pattern (produced by link_fastq):
+    {plate}-{multiplex_group}_{lane}_{read_type}.fastq.gz
+    plate must not contain '-' characters.
     """
     try:
-        *_, plate, multiplex_group, multi_field = os.path.basename(path).split('-')
-        primer_name, *_, lane, read_type, _ = multi_field.split('_')
+        basename = os.path.basename(path)[:-len('.fastq.gz')]
+        plate, multi_field = basename.split('-')
+        multiplex_group, lane, read_type = multi_field.split('_')
         try:
-            assert primer_name[0] in 'ABCDEFGHIJKLMNOP'
-            assert int(primer_name[1:]) in list(range(1, 25))
             assert int(multiplex_group) in list(range(1, 7))
-            assert lane in {'L001', 'L002', 'L003', 'L004', 'L005', 'L006', 'L007', 'L008'}
+            assert re.match(r'L\d+$', lane)
         except AssertionError:
             raise ValueError
     except ValueError:
         raise ValueError(f'Found unknown name pattern in path {path}')
     name_dict = dict(plate=plate,
                      multiplex_group=multiplex_group,
-                     primer_name=primer_name,
                      lane=lane,
                      read_type=read_type,
                      fastq_path=path,
-                     uid=f'{plate}-{multiplex_group}-{primer_name}')
+                     uid=f'{plate}-{multiplex_group}')
     return pd.Series(name_dict)
 
 
@@ -58,12 +57,11 @@ def make_fastq_df(fq_dir):
 	Create a DataFrame for FASTQ files in a local directory.
 	"""
 	print(f"Scanning directory: {fq_dir}")
-	input_files = glob.glob(os.path.join(os.path.expanduser(fq_dir), "*.fastq.gz")) + \
-	              glob.glob(os.path.join(os.path.expanduser(fq_dir), "*.fq.gz"))
-	
+	input_files = glob.glob(os.path.join(os.path.expanduser(fq_dir), "*.fastq.gz"))
+
 	#Verify if there are any fastq files
 	if not input_files:
-		raise FileNotFoundError(f"No .fastq.gz or .fq.gz files found in {fq_dir}.")
+		raise FileNotFoundError(f"No .fastq.gz files found in {fq_dir}.")
 
 	# Verify every link to a fastq file is real before proceeding
 	for f in input_files:
@@ -101,7 +99,7 @@ def get_fastq_info(fq_dir, local_outdir="./"):
 				(df.uid == uid) & (df.lane == lane) & (df.read_type == 'R2'),
 				'fastq_path'
 			].values[0]
-			expected_r1 = r2_path.replace('_R2_', '_R1_')
+			expected_r1 = r2_path.replace('_R2.fastq.gz', '_R1.fastq.gz')
 			errors.append(
 				f"  Found R2:       {r2_path}\n"
 				f"  Expected R1 at: {expected_r1}"
@@ -113,7 +111,7 @@ def get_fastq_info(fq_dir, local_outdir="./"):
 				(df.uid == uid) & (df.lane == lane) & (df.read_type == 'R1'),
 				'fastq_path'
 			].values[0]
-			expected_r2 = r1_path.replace('_R1_', '_R2_')
+			expected_r2 = r1_path.replace('_R1.fastq.gz', '_R2.fastq.gz')
 			errors.append(
 				f"  Found R1:       {r1_path}\n"
 				f"  Expected R2 at: {expected_r2}"
@@ -124,7 +122,7 @@ def get_fastq_info(fq_dir, local_outdir="./"):
 
 	df = df.loc[df.read_type == 'R1']
 	df.rename(columns={'fastq_path': 'R1'}, inplace=True)
-	df['R2'] = df.R1.apply(lambda x: x.replace('_R1_', '_R2_'))
+	df['R2'] = df.R1.str.replace('_R1.fastq.gz', '_R2.fastq.gz', regex=False)
 
 
 	df.sort_values(['uid', 'lane', 'R1'], inplace=True)
@@ -148,7 +146,7 @@ def get_random_index(UIDs, local_outdir="./"):
 
 	R = []
 	for uid in UIDs:
-		multiplex_group = uid.split('-')[-2]
+		multiplex_group = uid.split('-')[1]
 		random_index_fa = MODULE_DIR / 'random_index_v2' / f'random_index_v2.multiplex_group_{multiplex_group}.fa'
 		index_seq_dict = _parse_index_fasta(random_index_fa)
 		index_names = list(index_seq_dict.keys())
@@ -159,8 +157,7 @@ def get_random_index(UIDs, local_outdir="./"):
 	df_index = pd.DataFrame(R, columns=['uid', 'read_type', 'index_name'])
 	df_index.rename(columns={'uid': 'old_uid'}, inplace=True)
 	df_index['real_multiplex_group'] = df_index.index_name.apply(index_name2multiplex_group)
-	df_index['uid'] = df_index.loc[:, ['old_uid', 'real_multiplex_group']].apply(
-		lambda x: '-'.join([x.old_uid.split('-')[0], str(x.real_multiplex_group), x.old_uid.split('-')[-1]]), axis=1)
+	df_index['uid'] = df_index['old_uid'].str.split('-').str[0] + '-' + df_index['real_multiplex_group'].astype(str)
 	df_index['cell_id'] = df_index['uid'] + '-' + df_index['index_name']
 	df_index.to_csv(outfile, sep='\t', index=False)
 	return df_index

@@ -8,13 +8,13 @@ MODULE_DIR = pathlib.Path(__file__).parent
 
 # plate info
 def _parse_cell_id(cell_id):
-    plate, multiplex_group, pcr_index, random_index = cell_id.split('-')
+    plate, multiplex_group, random_index = cell_id.split('-')
     # 384 pos
     col384 = int(random_index[1:]) - 1
     row384 = ord(random_index[0]) - 65  # convert A-P to 0-23
     return pd.Series({
         'Plate': plate,
-        'PCRIndex': pcr_index,
+        'MultiplexGroup': multiplex_group,
         'RandomIndex': random_index,
         'Col384': col384,
         'Row384': row384
@@ -39,7 +39,7 @@ def get_plate_info(cell_ids):
 
 
 # Final summary function. It will aggregate all mapping summaries
-# It will also add Plate, PCRIndex, RandomIndex, Col384, and Row384 metadata
+# It will also add Plate, MultiplexGroup, RandomIndex, Col384, and Row384 metadata
 # And it will also write ALLC path file for generating MCDS
 
 def final_summary(output_dir, notebook=None, mode=None, kernel_name='python3'):
