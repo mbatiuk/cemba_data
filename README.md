@@ -171,6 +171,74 @@ During NOMe variant the GCH contain open chromatin information, HCN contain norm
 | **`mct-multi nome`** | `yap default-mapping-config --mode mct-multi --nome ...` |
 
 
+## Prepare FASTQ files by linking them with correct naming convention
+
+Raw sequencer outputs often have complex or inconsistent naming conventions. Use `link-fastq` to create symbolic links with standardized names: `{plate}-{multiplex_group}_{lane}_{read_type}.fastq.gz`.
+
+```shell
+yap link-fastq \
+    --in_fq_dir "raw_fastq_dir" \
+    --out_fq_dir "fastq" \
+    --plate_pattern "([a-zA-Z0-9]+)" \
+    --read_type_pattern "(R[12])" \
+    --multiplex_group_pattern "(\d+)" \
+    --lane_pattern "L\d+" \
+    --recursive
+```
+
+**Parameters:**
+- `-i` / `--in_fq_dir`: (**required**) Input directory containing raw FASTQ files.
+- `-o` / `--out_fq_dir`: (**required**) Output directory for standardized FASTQ symlinks.
+- `-p` / `--plate_pattern`: (**required**) Regex to extract plate name. Use `()` to capture a sub-portion; without `()` the full match is used.
+- `-r` / `--read_type_pattern`: Regex for R1/R2. Default: `(R[12])`. The matched value must contain `1` or `2`.
+- `-g` / `--multiplex_group_pattern`: (optional) Regex for multiplex group. Use `()` to capture a sub-portion; without `()` the full match is used. If absent, `1` is used for all files.
+- `--lane_pattern`: (optional) Regex to extract lane from filename. Use `()` to capture a sub-portion; without `()` the full match is used. Ignored if `--lane` is set.
+- `-l` / `--lane`: (optional) Manually assign a lane name to all files in `in_fq_dir`. If you have files from multiple sequencing runs of the same library pool you can call `link-fastq` separately per run and use `--lane` to assign a distinct lane name to each run. The pipeline will then merge fastq files correctly. `L001` is used when neither `--lane_pattern` nor `--lane` is provided.
+- `--recursive`: Search `in_fq_dir` recursively for FASTQ files.
+
+### How to write patterns (Regular Expressions)
+
+The tool uses Regular Expressions (regex) to find metadata in filenames. If the pattern contains parentheses `()`, only the part inside is extracted. Without `()`, the entire match is used as the value.
+
+For example, to extract the multiplex group from `Sample_1_L001_R1.fq.gz`:
+- `--multiplex_group_pattern "_\d+_"` — matches `_1_`; the full match `_1_` is used as the value.
+- `--multiplex_group_pattern "_(\d+)_"` — underscores are context; only `1` inside `()` is extracted.
+
+Use `()` when you need to strip surrounding delimiters or context from the value.
+
+### Common examples of patterns
+
+| Field | Pattern | Extracted value |
+| :--- | :--- | :--- |
+| **Plate** | `^([a-zA-Z0-9]+)` | Everything alphanumeric at start of filename |
+| **Plate** | `([^-_]+)` | Everything until first `-` or `_` |
+| **Read Type** | `(R[12])` | `R1` or `R2` (default, usually no need to change) |
+| **Lane** | `(L\d+)` | `L001`, `L002`, etc. |
+| **Multiplex Group** | `-(\d+)-` | Number between two hyphens |
+
+### Regex quick reference
+
+| Symbol | Meaning | Example |
+| :--- | :--- | :--- |
+| `.` | Any single character (except newline) | `P.ate` matches `Plate` or `P1ate` |
+| `\d` | Any digit (0-9) | `\d+` matches `1` in `123` |
+| `\w` | Any word character (letter, digit, or `_`) | `\w` matches `P` in `Plate` |
+| `\s` | Any whitespace character | rarely needed in filenames |
+| `[abc]` | Any one of the listed characters | `[abc]` matches `a`, `b`, or `c` |
+| `[a-zA-Z0-9]` | Any letter or digit | matches `P` in `Plate` or `1` in `123` |
+| `[^_-]` | Any character **except** those listed | `[^_-]` captures any character except `-` or `_` |
+| `^` | Start of string | `^025` matches `025` only at start |
+| `$` | End of string | `\.fastq\.gz$` matches only at end |
+| `\|` | Alternation — match either side | `R1\|R2` matches `R1` or `R2` |
+| `*` | Zero or more of the preceding | `\d*` matches `` or `123` |
+| `+` | One or more of the preceding | `\d+` matches `1` and `123`, not empty |
+| `?` | Zero or one of the preceding (optional) | `colou?r` matches `color` or `colour` |
+| `{n}` | Exactly n repetitions | `\d{3}` matches exactly `001` |
+| `{n,m}` | Between n and m repetitions | `\d{1,3}` matches `1`, `12`, or `123` |
+| `()` | Capturing group — **only this part is extracted** | `_(\d+)_` extracts `1` from `_1_` |
+| `\.` | Literal dot (escape special characters with `\`) | `\.fastq` matches `.fastq`, not `Xfastq` |
+
+
 ## Demultiplex
 
 ```shell

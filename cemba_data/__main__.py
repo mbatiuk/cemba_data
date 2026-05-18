@@ -449,6 +449,78 @@ def summary_register_subparser(subparser):
 
 
 
+def link_fastq_register_subparser(subparser):
+    parser = subparser.add_parser('link-fastq',
+                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                  help="Standardize FASTQ file names using symlinks.")
+
+    parser_req = parser.add_argument_group("Required inputs")
+
+    parser_req.add_argument(
+        "-i", "--in_fq_dir",
+        type=str,
+        required=True,
+        help="Input directory containing raw FASTQ files."
+    )
+
+    parser_req.add_argument(
+        "-o", "--out_fq_dir",
+        type=str,
+        required=True,
+        help="Output directory for standardized FASTQ symlinks."
+    )
+
+    parser_req.add_argument(
+        "-p", "--plate_pattern",
+        type=str,
+        required=True,
+        help="Regex with a capturing group () to extract plate name from filename. "
+             "Example: '([a-zA-Z0-9]+)'"
+    )
+
+    parser.add_argument(
+        "-r", "--read_type_pattern",
+        type=str,
+        default='(R[12])',
+        help="Regex to extract read type (R1/R2) from filename. "
+             "The captured value must contain '1' or '2'. "
+             "Default '(R[12])' works for standard Illumina files."
+    )
+
+    parser.add_argument(
+        "-g", "--multiplex_group_pattern",
+        type=str,
+        default=None,
+        help="Regex to extract multiplex group from filename. "
+             "If omitted, '1' is used for all files."
+    )
+
+    parser.add_argument(
+        "--lane_pattern",
+        type=str,
+        default=None,
+        help="Regex to extract lane from filename (e.g. 'L\d+'). "
+             "Ignored if --lane is provided. "
+             "If neither is provided, L001 is used as fallback."
+    )
+    parser.add_argument(
+        "-l", "--lane",
+        type=str,
+        default=None,
+        help="Manually assign this lane name to ALL files in in_fq_dir. "
+             "Takes precedence over --lane_pattern. "
+             "Useful when running link-fastq separately per sequencing run "
+             "to differentiate runs as L001, L002, etc."
+    )
+
+    parser.add_argument(
+        "--recursive",
+        action='store_true',
+        help="Search for FASTQ files recursively in in_fq_dir."
+    )
+    return
+
+
 def main():
     parser = argparse.ArgumentParser(description=DESCRIPTION,
                                      epilog=EPILOG,
@@ -469,6 +541,7 @@ def main():
     demultiplex_register_subparser(subparsers)
     mapping_register_subparser(subparsers)
     summary_register_subparser(subparsers)
+    link_fastq_register_subparser(subparsers)
     # initiate
     args = None
     if len(sys.argv) > 1:
@@ -506,6 +579,8 @@ def main():
         from .mapping import mapping as func
     elif cur_command == 'summary':
         from cemba_data.summary import final_summary as func
+    elif cur_command == 'link-fastq':
+        from cemba_data.link_fastq import link_fastq as func
     else:
         log.debug(f'{cur_command} not Known, check the main function if else part')
         parser.parse_args(["-h"])
