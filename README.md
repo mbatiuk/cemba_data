@@ -415,6 +415,12 @@ Please note 1 single PCR index primer can be used for the whole 384 well plate, 
 | UniqueAlignFinalReads | Final unique mapped total reads after picard deduplication |
 | UniqueAlignDuplicatedReads | Paired and unpaired duplicated reads |
 | UniqueAlignPCRDuplicationRate | FinalReads /(FinalReads + DuplicatedReads) |
+| UniqueMappedClusters | m3C specific. Number of unique read clusters (QNAMEs) in the BAM file. Includes both initial paired-end reads and cut-site split and collapsed reads tagged with ST. This metric correctly reports amount of mapped clusters, in contrast to Hisat3n summaries that underreport mapped reads due to read splitting |
+| UniqueMappedR1 | m3C specific. Number of unique mapped R1 in the BAM file. Identified by BAM read1 flag or ST tag value S1 (split reads). This metric correctly reports amount of mapped R1, in contrast to Hisat3n summaries that underreport mapped reads due to read splitting |
+| UniqueMappedR2 | m3C specific. Number of unique mapped R2 in the BAM file. Identified by BAM read2 flag or ST tag value S2 (split reads). This metric correctly reports amount of mapped R2, in contrast to Hisat3n summaries that underreport mapped reads due to read splitting |
+| UniqueClusterMappingRate | m3C specific. UniqueMappedClusters / TrimmedReadPairs × 100. BAM-derived overall unique mapping rate. Correctly reports cluster mapping rate |
+| UniqueMappedR1Rate | m3C specific. UniqueMappedR1 / TrimmedReadPairs × 100. BAM-derived R1 unique mapping rate. Correctly reports R1 mapping rate |
+| UniqueMappedR2Rate | m3C specific. UniqueMappedR2 / TrimmedReadPairs × 100. BAM-derived R2 unique mapping rate. Correctly reports R2 mapping rate |
 | CisContacts | Number of chromatin contacts where the two loci are on the same chromosome. |
 | CisCutContacts | No. of read pairs that are split from the same read at the cut site, and map to the same chromosome |
 | CisMultiContacts | CisContacts read pair contains multiple read contacts |
