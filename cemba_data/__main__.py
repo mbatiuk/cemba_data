@@ -521,6 +521,66 @@ def link_fastq_register_subparser(subparser):
     return
 
 
+def link_cell_fastq_register_subparser(subparser):
+    parser = subparser.add_parser('link-cell-fastq',
+                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                  help="Create symlinks for cell-level FASTQ files.")
+
+    parser_req = parser.add_argument_group("Required inputs")
+
+    parser_req.add_argument(
+        "-i", "--in_fq_dir",
+        type=str,
+        required=True,
+        help="Input directory containing cell-level FASTQ files."
+    )
+
+    parser_req.add_argument(
+        "-o", "--out_fq_dir",
+        type=str,
+        required=True,
+        help="Output directory for renamed symlinks."
+    )
+
+    parser_req.add_argument(
+        "-p", "--plate_pattern",
+        type=str,
+        required=True,
+        help="Regex with one capture group matching the plate ID. "
+             "Example: '^([^-]+)'"
+    )
+
+    parser_req.add_argument(
+        "-g", "--multiplex_group_pattern",
+        type=str,
+        required=True,
+        help="Regex with one capture group matching the multiplex group. "
+             "Example: '-([0-9]+)-'"
+    )
+
+    parser_req.add_argument(
+        "-w", "--well_pattern",
+        type=str,
+        required=True,
+        help="Regex with one capture group matching the well ID. "
+             "Example: '-([A-P][0-9]+)-R[12]'"
+    )
+
+    parser.add_argument(
+        "-r", "--read_type_pattern",
+        type=str,
+        default='(R[12])',
+        help="Regex to extract read type (R1/R2) from filename."
+    )
+
+    parser.add_argument(
+        "--recursive",
+        action='store_true',
+        help="Search for FASTQ files recursively in in_fq_dir."
+    )
+    return
+
+
 def main():
     parser = argparse.ArgumentParser(description=DESCRIPTION,
                                      epilog=EPILOG,
@@ -542,6 +602,7 @@ def main():
     mapping_register_subparser(subparsers)
     summary_register_subparser(subparsers)
     link_fastq_register_subparser(subparsers)
+    link_cell_fastq_register_subparser(subparsers)
     # initiate
     args = None
     if len(sys.argv) > 1:
@@ -581,6 +642,8 @@ def main():
         from cemba_data.summary import final_summary as func
     elif cur_command == 'link-fastq':
         from cemba_data.link_fastq import link_fastq as func
+    elif cur_command == 'link-cell-fastq':
+        from cemba_data.link_fastq import link_cell_fastq as func
     else:
         log.debug(f'{cur_command} not Known, check the main function if else part')
         parser.parse_args(["-h"])

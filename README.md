@@ -248,6 +248,34 @@ Use `()` when you need to strip surrounding delimiters or context from the value
 | `\.` | Literal dot (escape special characters with `\`) | `\.fastq` matches `.fastq`, not `Xfastq` |
 
 
+## Prepare cell-level FASTQ files from external sources by linking them with correct naming convention
+
+Use `link-cell-fastq` when working with already-demultiplexed cell-level FASTQ files from an external source where filenames do not follow the canonical format. It creates symlinks renamed to `{plate}-{multiplex_group}-{well}-R1.fq.gz` / `R2.fq.gz` expected by `mapping-cell-fastq`.
+
+For example `025307p2-1-C2-A13-R1.fq.gz` (external, contains index primer `C2`) becomes `025307p2-1-A13-R1.fq.gz`.
+
+```shell
+yap link-cell-fastq \
+    --in_fq_dir "external_cell_fastq" \
+    --out_fq_dir "cell_fastq" \
+    --plate_pattern "^([^-]+)" \
+    --multiplex_group_pattern "^[^-]+-([^-]+)-" \
+    --well_pattern "-([A-][0-9]+)-R[12]" \
+    --read_type_pattern "(R[12])" \
+    --recursive
+```
+
+**Parameters:**
+- `-i` / `--in_fq_dir`: (**required**) Input directory containing cell-level FASTQ files.
+- `-o` / `--out_fq_dir`: (**required**) Output directory for renamed symlinks.
+- `-p` / `--plate_pattern`: (**required**) Regex with one capture group matching the plate ID.
+- `-g` / `--multiplex_group_pattern`: (**required**) Regex with one capture group matching the multiplex group.
+- `-w` / `--well_pattern`: (**required**) Regex with one capture group matching the well ID.
+- `-r` / `--read_type_pattern`: Regex for R1/R2. Default: `(R[12])`. The matched value must contain `1` or `2`.
+- `--recursive`: Search `in_fq_dir` recursively for FASTQ files.
+
+The patterns follow the same regex rules described above for `link-fastq`. See the pattern table and regex quick reference above.
+
 ## Demultiplex
 
 ```shell
