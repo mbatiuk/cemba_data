@@ -40,6 +40,11 @@ def snmc_summary(outname="MappingSummary.csv.gz",indir="."):
 								parser=cell_parser_allc_count,indir=indir)
 	all_stats.append(df)
 
+	# lambda spike-in conversion QC
+	df = parse_single_stats_set(path_pattern=indir+'/allc/*.allc.tsv.gz',
+								parser=cell_parser_allc_lambda_frac,indir=indir)
+	all_stats.append(df)
+
 	# concatenate all stats
 	all_stats = pd.concat(all_stats, axis=1)
 	all_stats.index.name = 'cell'
@@ -107,6 +112,11 @@ def snmct_summary(outname="MappingSummary.csv.gz",indir="."):
 	# allc count
 	df = parse_single_stats_set(path_pattern=indir+'/allc/*.allc.tsv.gz.count.csv',
 								parser=cell_parser_allc_count,indir=indir)
+	all_stats.append(df)
+
+	# lambda spike-in conversion QC
+	df = parse_single_stats_set(path_pattern=indir+'/allc/*.allc.tsv.gz',
+								parser=cell_parser_allc_lambda_frac,indir=indir)
 	all_stats.append(df)
 
 	# feature count
@@ -179,6 +189,12 @@ def snm3c_summary(outname="MappingSummary.csv.gz",indir="."):
 	df = parse_single_stats_set(path_pattern=indir+'/allc/*.allc.tsv.gz.count.csv',
 								parser=cell_parser_allc_count,indir=indir)
 	all_stats.append(df)
+
+	# lambda spike-in conversion QC
+	df = parse_single_stats_set(path_pattern=indir+'/allc/*.allc.tsv.gz',
+								parser=cell_parser_allc_lambda_frac,indir=indir)
+	all_stats.append(df)
+
 	# concatenate all stats
 	all_stats = pd.concat(all_stats, axis=1)
 	all_stats.index.name = 'cell'

@@ -51,6 +51,8 @@ source ~/.zshrc
 ```
 
 ## Build hisat-3n index
+**Note:** If you use lambda phage DNA as a control for bisulphite conversion you can append lambda DNA fasta at the bottom of genome fasta file. Name lambda DNA as chrL.
+
 ### Non-repeat index
 
 ```bash
@@ -314,7 +316,7 @@ Please note 1 single PCR index primer can be used for the whole 384 well plate, 
 # Workflow of m3c run
 <img src="doc/snm3c_dag.svg" title="DAG for snm3c" width="800px">
 
-# QC metrics, snm3C-seq
+# QC metrics
 
 | Field | Purpose |
 |-------|---------|
@@ -374,3 +376,7 @@ Please note 1 single PCR index primer can be used for the whole 384 well plate, 
 | mCCCFrac | Fraction of methylated cytosine (mCCCmC) divided by covered cytosine (mCCCCov) in the CCC context. |
 | mCGFrac | Fraction of methylated cytosine (mCGmC) divided by covered cytosine (mCGCov) in the CG context. |
 | mCHFrac | Fraction of methylated cytosine (mCHmC) divided by covered cytosine (mCHCov) in the CH context. |
+| LambdamCGFrac | Fraction of methylated CG cytosines divided by covered CG cytosines on lambda phage spike-in DNA (chrL). Should be ~1 if enzymatic CG methylation was complete. Drop below 1 indicates over-conversion when mCG are stripped of methyl group, or insufficient enzymatic methylation of lambda DNA. |
+| LambdaCGCov | Total covered CG cytosines on lambda spike-in DNA (chrL). |
+| LambdamCHFrac | Fraction of methylated CH (CA + CT + CC) cytosines divided by covered CH cytosines on lambda spike-in DNA (chrL). Should be ~0 since lambda CH in unmethylated, high values indicate underconversion of unmethylated CH into TH. |
+| LambdaCHCov | Total covered CH cytosines on lambda spike-in DNA (chrL). |

@@ -89,4 +89,8 @@ COL_NAMES = {
 	('cell_parser_call_chromatin_contacts', 'CisContactsRatio'): '',
 	('cell_parser_call_chromatin_contacts', 'TransContactsRatio'): '',
 	('cell_parser_call_chromatin_contacts', 'MultiContactsRatio'): '',
+	('cell_parser_allc_lambda_frac', 'LambdamCGFrac'): '',
+	('cell_parser_allc_lambda_frac', 'LambdaCGCov'): '',
+	('cell_parser_allc_lambda_frac', 'LambdamCHFrac'): '',
+	('cell_parser_allc_lambda_frac', 'LambdaCHCov'): '',
 }

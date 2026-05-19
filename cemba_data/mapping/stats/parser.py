@@ -7,6 +7,7 @@ import os
 import numpy as np
 import pandas as pd
 import pysam
+from collections import defaultdict
 
 from .col_names import COL_NAMES
 
@@ -261,6 +262,77 @@ def cell_parser_allc_count(path):
 		cell_records[f'{mc_type}{count_type}'] = count
 	cell_records = pd.Series(cell_records, name=cell_id, dtype='O')
 	return cell_records
+
+
+def cell_parser_allc_lambda_frac(path, num_upstr_bases=0):
+	"""
+	Compute bisulfite conversion QC metrics from lambda phage spike-in DNA (chrL).
+
+	Requires the full-CN allc file (allc/*.allc.tsv.gz).
+	You can meassure:
+
+	  LambdamCGFrac  : mCG fraction on chrL — should be ~1.0 if lambda DNA was enzymatically methylated on CpG
+	                   drop below 1.0 = over-conversion (mCpG stripped by bisulfite)
+	                   note: incomplete enzymatic methylation also reduces this value
+
+	  LambdamCHFrac  : mCH fraction on chrL (CA + CT + CC)
+	                   should be ~0.0 if lambda DNA was unmetylated on CH; rise = under-conversion (incomplete C→T conversion)
+
+	Parameters
+	----------
+	path : str or Path
+		Path to a tabix-indexed allc.tsv.gz file.
+	num_upstr_bases : int
+		Upstream bases before the C in the context string. 0 for standard hisat3n allc.
+
+	Returns
+	-------
+	pd.Series with keys:
+		LambdamCGFrac, LambdaCGCov, LambdamCHFrac, LambdaCHCov
+	"""
+
+	num_upstr_bases = int(num_upstr_bases)
+	path = pathlib.Path(path)
+	cell_id = path.name.split('.')[0]
+
+	mc_counts = defaultdict(int)
+	cov_counts = defaultdict(int)
+	try:
+		with pysam.TabixFile(str(path)) as allc:
+			try:
+				for line in allc.fetch('chrL'):
+					chrom, pos, strand, context, mc, cov, _ = line.split('\t')
+					context = context[num_upstr_bases:num_upstr_bases + 2]
+					mc_counts[context] += int(mc)
+					cov_counts[context] += int(cov)
+			except ValueError:
+				pass  # chrL absent
+
+		df = pd.DataFrame({'mc': pd.Series(mc_counts), 'cov': pd.Series(cov_counts)})
+		df = df.reindex(['CG', 'CC', 'CT', 'CA']).fillna(0)
+
+		cg_cov = df.loc['CG', 'cov']
+		cg_frac = df.loc['CG', 'mc'] / cg_cov if cg_cov > 0 else 0.0
+
+		ch_cov = df.loc['CC', 'cov'] + df.loc['CT', 'cov'] + df.loc['CA', 'cov']
+		ch_frac = (
+			(df.loc['CC', 'mc'] + df.loc['CT', 'mc'] + df.loc['CA', 'mc']) / ch_cov
+			if ch_cov > 0 else 0.0
+		)
+
+	except Exception:
+		cg_frac = cg_cov = ch_frac = ch_cov = 0
+
+	return pd.Series(
+		{
+			'LambdamCGFrac': cg_frac,
+			'LambdaCGCov': int(cg_cov),
+			'LambdamCHFrac': ch_frac,
+			'LambdaCHCov': int(ch_cov),
+		},
+		name=cell_id,
+		dtype='O'
+	)
 
 
 def cell_parser_reads_mc_frac_profile(path):
