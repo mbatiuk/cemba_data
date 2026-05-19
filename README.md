@@ -276,6 +276,7 @@ yap link-cell-fastq \
 
 The patterns follow the same regex rules described above for `link-fastq`. See the pattern table and regex quick reference above.
 
+
 ## Demultiplex
 
 ```shell
@@ -324,6 +325,44 @@ bash your_cell_level_directory/snakemake/sbatch/sbatch-serial-qos.sh
 yap mapping --output_dir "your_cell_level_directory" \
     --config_path "m3c_config.ini" --n_jobs 14 --total_memory_gb 32
 ```
+
+## Map already-demultiplexed cell-level FASTQ files from external sources
+
+Use `mapping-cell-fastq` when you have already-demultiplexed cell-level FASTQ files that are not organized in pipeline expected directory structure, e.g. from external sources. Cells are randomly shuffled into groups and symlinked into the expected directory structure, then the mapping pipeline is prepared for each group.
+
+FASTQ files must follow the canonical naming format `{plate}-{multiplex_group}-{well}-R1.fq.gz` / `R2.fq.gz`. If your files come from an external source with a different naming convention, run `link-cell-fastq` first (see above).
+
+```shell
+yap mapping-cell-fastq \
+    --output_dir "your_cell_level_directory" \
+    --config_path "m3c_config.ini" \
+    --fastq_pattern "cell_fastq/*.fq.gz" \
+    --n_group 64 \
+    --n_jobs 64 \
+    --total_memory_gb 128 \
+    --qos "serial" \
+    --conda_base "mamba"
+```
+
+**Parameters:**
+- `-o` / `--output_dir`: (**required**) Output directory. Must not already exist.
+- `-config` / `--config_path`: (**required**) Path to the mapping config `.ini` file (see `yap default-mapping-config`).
+- `-fq` / `--fastq_pattern`: (**required**) Glob pattern matching all cell-level FASTQ files. **Must be quoted** to prevent shell expansion, e.g. `"cell_fastq/*.fq.gz"`.
+- `--n_group`: Number of groups to split cells into. Rule of the thumb, divide number of cells by 64, so you will get 64 cells per group.
+- `--n_jobs`: Number of parallel jobs per group.
+- `--total_memory_gb`: Total RAM available.
+- `--qos`: QOS for sbatch script.
+- `--conda_base`: Conda installation type. See `--conda_base` options under **Mapping** above.
+
+This will create mapping scripts, that you can execute either locally or by submitting HPC jobs:
+
+```shell
+bash your_cell_level_directory/snakemake/qsub/snakemake_cmd.txt
+```
+```shell
+bash your_cell_level_directory/snakemake/sbatch/sbatch-serial-qos.sh
+```
+
 
 # Background on library preparation and structure
 
