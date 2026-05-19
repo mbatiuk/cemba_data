@@ -241,7 +241,7 @@ def cell_parser_allc_count(path):
 
 	try:
 		ccc_mc, ccc_cov = np.ravel(allc_counts.loc[is_ccc, ['mc', 'cov']].values)
-	except ValueError:
+	except (ValueError, IndexError):
 		ccc_mc, ccc_cov = 0, 0
 
 	mc_context_sum = pd.concat([
@@ -255,11 +255,14 @@ def cell_parser_allc_count(path):
 	mc_context_sum = mc_context_sum.astype('O')
 	mc_context_sum['Frac'] = mc_context_sum['mc'] / (mc_context_sum['cov'] +
 													 0.00001)
-	mc_context_sum.rename(columns={'mc': 'mC', 'cov': 'Cov'}, inplace=True)
 
 	cell_records = {}
-	for (count_type, mc_type), count in mc_context_sum.unstack().items():
-		cell_records[f'{mc_type}{count_type}'] = count
+	for mc_type, row in mc_context_sum.iterrows():
+		cell_records[mc_type] = row['mc']
+		# remove 'm' from context for Cov name
+		cov_name = mc_type[1:] if mc_type.startswith('m') else mc_type
+		cell_records[f'{cov_name}Cov'] = row['cov']
+		cell_records[f'{mc_type}Frac'] = row['Frac']
 	cell_records = pd.Series(cell_records, name=cell_id, dtype='O')
 	return cell_records
 
