@@ -367,15 +367,15 @@ Please note 1 single PCR index primer can be used for the whole 384 well plate, 
 | CisContactsRatio | TotalCisContacts / No. of mapped fragments |
 | TransContactsRatio | TotalTransContacts / No. of mapped fragments |
 | MultiContactsRatio | TotalMultiContacts / No. of mapped fragments |
-| mCCCmC | Total methylated cytosine in the CCC context. |
-| mCGmC | Total methylated cytosine in the CG context. |
-| mCHmC | Total methylated cytosine in the CH context. |
-| mCCCCov | Total covered cytosine in the CCC context. |
-| mCGCov | Total covered cytosine in the CG context. |
-| mCHCov | Total covered cytosine in the CH context. |
-| mCCCFrac | Fraction of methylated cytosine (mCCCmC) divided by covered cytosine (mCCCCov) in the CCC context. |
-| mCGFrac | Fraction of methylated cytosine (mCGmC) divided by covered cytosine (mCGCov) in the CG context. |
-| mCHFrac | Fraction of methylated cytosine (mCHmC) divided by covered cytosine (mCHCov) in the CH context. |
+| mCCC | Total methylated cytosine in the CCC context. |
+| mCG | Total methylated cytosine in the CG context. |
+| mCH | Total methylated cytosine in the CH context. |
+| CCCCov | Total covered cytosine in the CCC context. |
+| CGCov | Total covered cytosine in the CG context. |
+| CHCov | Total covered cytosine in the CH context. |
+| mCCCFrac | Fraction of methylated cytosine (mCCC) divided by covered cytosine (CCCCov) in the CCC context. |
+| mCGFrac | Fraction of methylated cytosine (mCG) divided by covered cytosine (CGCov) in the CG context. |
+| mCHFrac | Fraction of methylated cytosine (mCH) divided by covered cytosine (CHCov) in the CH context. |
 | LambdamCGFrac | Fraction of methylated CG cytosines divided by covered CG cytosines on lambda phage spike-in DNA (chrL). Should be ~1 if enzymatic CG methylation was complete. Drop below 1 indicates over-conversion when mCG are stripped of methyl group, or insufficient enzymatic methylation of lambda DNA. |
 | LambdaCGCov | Total covered CG cytosines on lambda spike-in DNA (chrL). |
 | LambdamCHFrac | Fraction of methylated CH (CA + CT + CC) cytosines divided by covered CH cytosines on lambda spike-in DNA (chrL). Should be ~0 since lambda CH in unmethylated, high values indicate underconversion of unmethylated CH into TH. |
