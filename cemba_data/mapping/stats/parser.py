@@ -167,9 +167,9 @@ def cell_parser_picard_dedup_stat(stat_path):
 		record['DuplicatedReads'] = int(record['UNPAIRED_READ_DUPLICATES']) + \
 									int(record['READ_PAIR_DUPLICATES']) * 2
 		record['PCRDuplicationRate'] = record['FinalReads'] / \
-									   (record['FinalReads'] + record['DuplicatedReads'])
-		record['PCRDuplicationRate'] = int(
-			(1 - record['PCRDuplicationRate']) * 100)
+									   (record['FinalReads'] + record['DuplicatedReads'] + 0.00001)
+		record['PCRDuplicationRate'] = round(
+			(1 - record['PCRDuplicationRate']) * 100, 2)
 
 		record.name = cell_id
 	except pd.errors.EmptyDataError:
@@ -239,10 +239,7 @@ def cell_parser_allc_count(path):
 	if c_pos > 0:
 		is_ccc &= np.array(allc_counts.index.str[c_pos - 1] != 'G')
 
-	try:
-		ccc_mc, ccc_cov = np.ravel(allc_counts.loc[is_ccc, ['mc', 'cov']].values)
-	except (ValueError, IndexError):
-		ccc_mc, ccc_cov = 0, 0
+	ccc_mc, ccc_cov = allc_counts.loc[is_ccc, ['mc', 'cov']].sum().values
 
 	mc_context_sum = pd.concat([
 		pd.DataFrame({
