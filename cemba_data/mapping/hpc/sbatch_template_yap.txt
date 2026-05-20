@@ -41,7 +41,8 @@ module purge
 # Activate conda yap mapping environment, making sure name is correct
 conda activate yap || {{ echo "Error: Failed to activate 'yap' environment"; exit 1; }}
 
-
+# Set thread count
+export OMP_NUM_THREADS={cpus}
 
 # Actual command
 
