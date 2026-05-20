@@ -49,6 +49,16 @@ def snmc_summary(outname="MappingSummary.csv.gz",indir="."):
 	all_stats = pd.concat(all_stats, axis=1)
 	all_stats.index.name = 'cell'
 	if all_stats.shape[0] > 0:
+		# Reorder: place derived rate columns adjacent to their source columns
+		cols = list(all_stats.columns)
+		for src, derived in [('UniqueMappedClusters', 'UniqueClusterMappingRate'),
+							  ('UniqueMappedR1', 'UniqueMappedR1Rate'),
+							  ('UniqueMappedR2', 'UniqueMappedR2Rate')]:
+			if derived in cols and src in cols:
+				cols.remove(derived)
+				cols.insert(cols.index(src) + 1, derived)
+		all_stats = all_stats[cols]
+
 		all_stats.to_csv(outname)
 	else:
 		print(f'Nothing in {outname}')
@@ -153,7 +163,7 @@ def snm3c_summary(outname="MappingSummary.csv.gz",indir="."):
 
 	# hisat-3n mapping PE
 	df = parse_single_stats_set(path_pattern=indir+'/bam/*.hisat3n_dna_summary.txt',
-								parser=cell_parser_hisat_summary,indir=indir)
+								parser=cell_parser_hisat_summary, prefix='WholeReads', indir=indir)
 	all_stats.append(df)
 
 	# hisat-3n mapping split-reads SE

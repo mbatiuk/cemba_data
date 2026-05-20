@@ -120,10 +120,10 @@ def cell_parser_hisat_se_summary(stat_path):
 	"""
 	cell_id = pathlib.Path(stat_path).name.split('.')[0]
 	term_dict = {
-		'Total reads': 'ReadsMappedInSE',
-		'Aligned 0 time': 'UnmappableReads',
-		'Aligned 1 time': 'UniqueMappedReads',
-		'Aligned >1 times': 'MultiMappedReads',
+		'Total reads': 'SplitReadsTotal',
+		'Aligned 0 time': 'SplitReadsUnmapped',
+		'Aligned 1 time': 'SplitReadsUniqueMapped',
+		'Aligned >1 times': 'SplitReadsMultiMapped',
 	}
 
 	with open(stat_path) as rep:
@@ -144,14 +144,14 @@ def cell_parser_hisat_se_summary(stat_path):
 				report_dict[v] = 0
 
 		report_dict = pd.Series(report_dict).astype(int)
-		total_reads = report_dict['ReadsMappedInSE']
-		unique_mapped_reads = report_dict['UniqueMappedReads']
-		report_dict['UniqueMappingRate'] = round(unique_mapped_reads /
+		total_reads = report_dict['SplitReadsTotal']
+		unique_mapped_reads = report_dict['SplitReadsUniqueMapped']
+		report_dict['SplitReadsUniqueMappingRate'] = round(unique_mapped_reads /
 												 (total_reads + 0.00001) * 100,2)
-		multi_mapped_reads = report_dict['MultiMappedReads']
-		report_dict[f'MultiMappingRate'] = round(multi_mapped_reads /
+		multi_mapped_reads = report_dict['SplitReadsMultiMapped']
+		report_dict[f'SplitReadsMultiMappingRate'] = round(multi_mapped_reads /
 												 (total_reads + 0.00001) * 100,2)
-		report_dict[f'OverallMappingRate'] = round(
+		report_dict[f'SplitReadsOverallMappingRate'] = round(
 			(unique_mapped_reads + multi_mapped_reads) / (total_reads + 0.00001) * 100,2)
 	return pd.Series(report_dict, name=cell_id)
 
