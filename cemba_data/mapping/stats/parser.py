@@ -475,9 +475,10 @@ def parse_single_stats_set(path_pattern, parser, prefix='',indir='.'):
 				rename_dict[original_name] = new_name
 	new_columns = stats_df.columns.map(rename_dict)
 	if new_columns.isna().sum() != 0:
+		unlisted = stats_df.columns[new_columns.isna()]
 		print(
-			f'These columns are ignored because they do not listed'
-			f' in the COL_NAMES dict: {stats_df.columns[new_columns.isna()]}')
+			f'These columns are not listed in COL_NAMES and will be passed through as-is: {unlisted.tolist()}')
+		new_columns = new_columns.where(new_columns.notna(), other=stats_df.columns)
 	# remove columns marked as DELETE in COL_NAMES
 	stats_df.columns = new_columns
 	stats_df = stats_df.iloc[:, new_columns != 'DELETE'].copy()
