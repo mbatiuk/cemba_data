@@ -20,7 +20,7 @@ def snmc_summary(outname="MappingSummary.csv.gz",indir="."):
 
 	# hisat-3n mapping
 	df = parse_single_stats_set(path_pattern=indir+'/bam/*.hisat3n_dna_summary.txt',
-								parser=cell_parser_hisat_summary,indir=indir)
+								parser=cell_parser_hisat_summary, prefix='Reads', indir=indir)
 	all_stats.append(df)
 
 	# uniquely mapped reads dedup
@@ -72,12 +72,12 @@ def snmct_summary(outname="MappingSummary.csv.gz",indir="."):
 
 	# hisat-3n DNA mapping
 	df = parse_single_stats_set(path_pattern=indir+'/bam/*.hisat3n_dna_summary.txt',
-								parser=cell_parser_hisat_summary, prefix='DNA',indir=indir)
+								parser=cell_parser_hisat_summary, prefix='DNAReads', indir=indir)
 	all_stats.append(df)
 
 	# hisat-3n RNA mapping
 	df = parse_single_stats_set(path_pattern=indir+'/bam/*.hisat3n_rna_summary.txt',
-								parser=cell_parser_hisat_summary, prefix='RNA',indir=indir)
+								parser=cell_parser_hisat_summary, prefix='RNAReads', indir=indir)
 	all_stats.append(df)
 
 	# uniquely mapped reads dedup

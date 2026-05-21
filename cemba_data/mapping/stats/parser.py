@@ -101,12 +101,12 @@ def cell_parser_hisat_summary(stat_path):
 		unique_mapped_reads = report_dict[f'PEUniqueMappedReadPairs'] * 2 + \
 							  report_dict[f'PEDiscordantlyUniqueMappedReadPairs'] * 2 + \
 							  report_dict[f'SEUniqueMappedReads']
-		report_dict['UniqueMappedReads'] = unique_mapped_reads
+		report_dict['UniqueMapped'] = unique_mapped_reads
 		report_dict[f'UniqueMappingRate'] = round(unique_mapped_reads /
 												  (total_reads + 0.00001) * 100,2)
 		multi_mapped_reads = report_dict[f'PEMultiMappedReadPairs'] * 2 + \
 							 report_dict[f'SEMultiMappedReads']
-		report_dict['MultiMappedReads'] = multi_mapped_reads
+		report_dict['MultiMapped'] = multi_mapped_reads
 		report_dict[f'MultiMappingRate'] = round(multi_mapped_reads /
 												 (total_reads + 0.00001) * 100,2)
 		report_dict[f'OverallMappingRate'] = round(

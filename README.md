@@ -398,16 +398,26 @@ Please note 1 single PCR index primer can be used for the whole 384 well plate, 
 | **R2WithAdapters** | Number of reads from the second mate in paired-end reads that contained adapter sequences and were trimmed |
 | **R2QualTrimBP** | Number of R2 base pairs trimmed due to low base quality |
 | **R2TrimmedReadsBP** | Number of R2 base pairs remaining after adapter and quality trimming |
-| **UniqueMappedReads** | Number of uniquely mapped reads: PEUniqueMappedReadPairs (Aligned concordantly or discordantly 0 time) + PEDiscordantlyUniqueMappedReadPairs (Aligned discordantly 1 time) + SEUniqueMappedReads (Aligned 1 time unpaired reads) |
-| **UniqueMappingRate** | **`mc/mct`** specific. Rate of unique read mapping (total_reads = ReadPairsMappedInPE * 2 + ReadsMappedInSE) |
-| **MultiMappedReads** | **`mc/mct`** specific. Number of multimapped reads |
-| **MultiMappingRate** | **`mc/mct`** specific. Rate of multimapping |
-| **OverallMappingRate** | **`mc/mct`** specific. Rate of mapping for all reads (UniqueMappingRate + MultiMappingRate) |
-| **WholeReadsUniqueMappedReads** | **`m3C`** specific. Number of uniquely mapped reads from initial hisat3n alignment, before restriction-site splitting. Each unmapped read from this step is split into fragments and remapped (see R1/R2SplitReads). Underreports true mapping rate since it misses split-read mappings |
-| **WholeReadsMultiMappedReads** | **`m3C`** specific. Number of multimapped reads from initial hisat3n alignment, before restriction-site splitting |
-| **WholeReadsUniqueMappingRate** | **`m3C`** specific. Rate of unique mapping from initial hisat3n alignment. Underreports true unique mapping rate since it misses split-read mappings. See UniqueClusterMappingRate for the correct overall rate |
-| **WholeReadsMultiMappingRate** | **`m3C`** specific. Rate of multimapping from initial hisat3n alignment |
-| **WholeReadsOverallMappingRate** | **`m3C`** specific. Overall mapping rate from initial hisat3n alignment. Underreports true overall mapping rate since it misses split-read mappings |
+| **ReadsUniqueMapped** | **`mc`** specific. Number of uniquely mapped reads, calculated from Hisat3n report: 2 * PEUniqueMappedReadPairs (Read Pairs Aligned concordantly 1 time) + 2 * PEDiscordantlyUniqueMappedReadPairs (Read Pairs Aligned discordantly 1 time) + SEUniqueMappedReads (Unpaired Reads Aligned 1 time) |
+| **ReadsUniqueMappingRate** | **`mc`** specific. Rate of unique read mapping: (ReadsUniqueMapped / (ReadPairsMappedInPE (Total Read Pairs) * 2) * 100) |
+| **ReadsMultiMapped** | **`mc`** specific. Number of multimapped reads:  (2 * PEMultiMappedReadPairs (Read Pairs Aligned concordantly >1 times)) + SEMultiMappedReads (Unpaired Reads Aligned >1 times) |
+| **ReadsMultiMappingRate** | **`mc`** specific. Rate of multimapping: (ReadsMultiMapped / (ReadPairsMappedInPE (Total Read Pairs) * 2) * 100) |
+| **ReadsOverallMappingRate** | **`mc`** specific. Rate of mapping for all reads (ReadsUniqueMappingRate + ReadsMultiMappingRate) |
+| **DNAReadsUniqueMapped** | **`mct`** specific. Number of uniquely mapped DNA reads, calculated from Hisat3n DNA alignment report: 2 * PEUniqueMappedReadPairs + 2 * PEDiscordantlyUniqueMappedReadPairs + SEUniqueMappedReads |
+| **DNAReadsUniqueMappingRate** | **`mct`** specific. Rate of unique DNA read mapping: (DNAReadsUniqueMapped / (ReadPairsMappedInPE * 2) * 100) |
+| **DNAReadsMultiMapped** | **`mct`** specific. Number of multimapped DNA reads: (2 * PEMultiMappedReadPairs) + SEMultiMappedReads |
+| **DNAReadsMultiMappingRate** | **`mct`** specific. Rate of DNA multimapping: (DNAReadsMultiMapped / (ReadPairsMappedInPE * 2) * 100) |
+| **DNAReadsOverallMappingRate** | **`mct`** specific. Overall DNA mapping rate (DNAReadsUniqueMappingRate + DNAReadsMultiMappingRate) |
+| **RNAReadsUniqueMapped** | **`mct`** specific. Number of uniquely mapped RNA reads from Hisat3n RNA alignment report: 2 * PEUniqueMappedReadPairs + 2 * PEDiscordantlyUniqueMappedReadPairs + SEUniqueMappedReads |
+| **RNAReadsUniqueMappingRate** | **`mct`** specific. Rate of unique RNA read mapping: (RNAReadsUniqueMapped / (ReadPairsMappedInPE * 2) * 100) |
+| **RNAReadsMultiMapped** | **`mct`** specific. Number of multimapped RNA reads: (2 * PEMultiMappedReadPairs) + SEMultiMappedReads |
+| **RNAReadsMultiMappingRate** | **`mct`** specific. Rate of RNA multimapping: (RNAReadsMultiMapped / (ReadPairsMappedInPE * 2) * 100) |
+| **RNAReadsOverallMappingRate** | **`mct`** specific. Overall RNA mapping rate (RNAReadsUniqueMappingRate + RNAReadsMultiMappingRate) |
+| **WholeReadsUniqueMapped** | **`m3C`** specific. Same calculation as in **ReadsUniqueMapped**. Number of uniquely mapped reads from initial hisat3n alignment, before m3c-specific restriction-site splitting. Each unmapped read from this step is split into fragments and remapped (see R1/R2SplitReads). Underreports true mapping rate since it misses split-read mappings |
+| **WholeReadsMultiMapped** | **`m3C`** specific. Same calculation as in **ReadsMultiMapped**. Number of multimapped reads from initial hisat3n alignment, before restriction-site splitting |
+| **WholeReadsUniqueMappingRate** | **`m3C`** specific. Same calculation as in **ReadsUniqueMappingRate**. Rate of unique mapping from initial hisat3n alignment. Underreports true unique mapping rate since it misses split-read mappings. See UniqueClusterMappingRate for the correct overall rate |
+| **WholeReadsMultiMappingRate** | **`m3C`** specific. Same calculation as in **ReadsMultiMappingRate**. Rate of multimapping from initial hisat3n alignment |
+| **WholeReadsOverallMappingRate** | **`m3C`** specific. Same calculation as in **ReadsOverallMappingRate**. Overall mapping rate from initial hisat3n alignment. Underreports true overall mapping rate since it misses split-read mappings |
 | **R1SplitReadsUniqueMapped** | **`m3C`** specific. Number of uniquely mapped R1 reads that failed initial hisat3n paired-end mapping, were split at restriction cut sites, and remapped as single-end reads |
 | **R1SplitReadsUniqueMappingRate** | **`m3C`** specific. Rate of unique mapping for R1 split reads |
 | **R1SplitReadsMultiMapped** | **`m3C`** specific. Number of multimapped R1 split reads |
@@ -418,43 +428,43 @@ Please note 1 single PCR index primer can be used for the whole 384 well plate, 
 | **R2SplitReadsMultiMapped** | **`m3C`** specific. Number of multimapped R2 split reads |
 | **R2SplitReadsMultiMappingRate** | **`m3C`** specific. Rate of multimapping for R2 split reads |
 | **R2SplitReadsOverallMappingRate** | **`m3C`** specific. Overall mapping rate for R2 split reads |
-| **UniqueMappedClusters** | **`m3C`** specific.  Number of unique read clusters (QNAMEs) in the BAM file, including both initial reads and cut-site split reads. Correctly reports total mapped clusters, in contrast to WholeReadsUniqueMappedReads missing m3c split-reads and R1/R2SplitReadsUniqueMapped missing initial full-length reads |
-| **UniqueMappedR1** | **`m3C`** specific. Number of unique mapped R1 in the BAM file, including both initial reads and cut-site split reads. Correctly reports total mapped R1, in contrast to WholeReadsUniqueMappedReads missing m3c R1 split-reads and R1SplitReadsUniqueMapped missing initial full-length R1 reads |
-| **UniqueMappedR2** | **`m3C`** specific. Number of unique mapped R2 in the BAM file, including both initial reads and cut-site split reads. Correctly reports total mapped R2, in contrast to WholeReadsUniqueMappedReads missing m3c R2 split-reads and R2SplitReadsUniqueMapped missing initial full-length R2 reads |
+| **UniqueMappedClusters** | **`m3C`** specific.  Number of unique read clusters (QNAMEs) in the BAM file, including both initial reads and cut-site split reads. Correctly reports total mapped clusters, in contrast to WholeReadsUniqueMapped missing m3c split-reads and R1/R2SplitReadsUniqueMapped missing initial whole reads |
+| **UniqueMappedR1** | **`m3C`** specific. Number of unique mapped R1 in the BAM file, including both initial reads and cut-site split reads. Correctly reports total mapped R1, in contrast to WholeReadsUniqueMapped missing m3c R1 split-reads and R1SplitReadsUniqueMapped missing initial whole R1 reads |
+| **UniqueMappedR2** | **`m3C`** specific. Number of unique mapped R2 in the BAM file, including both initial reads and cut-site split reads. Correctly reports total mapped R2, in contrast to WholeReadsUniqueMapped missing m3c R2 split-reads and R2SplitReadsUniqueMapped missing initial whole R2 reads |
 | **UniqueClusterMappingRate** | **`m3C`** specific. UniqueMappedClusters / TrimmedReadPairs × 100. BAM-derived overall unique mapping rate. Correctly reports cluster mapping rate during m3c |
 | **UniqueMappedR1Rate** | **`m3C`** specific. UniqueMappedR1 / TrimmedReadPairs × 100. BAM-derived R1 unique mapping rate. Correctly reports R1 mapping rate during m3c |
 | **UniqueMappedR2Rate** | **`m3C`** specific. UniqueMappedR2 / TrimmedReadPairs × 100. BAM-derived R2 unique mapping rate. Correctly reports R2 mapping rate during m3c |
-| **CisContacts** | **`m3C`** specific. Number of chromatin contacts where the two loci are on the same chromosome |
-| **CisCutContacts** | **`m3C`** specific. Number of read pairs that are split from the same read at the cut site, and map to the same chromosome |
-| **CisMultiContacts** | **`m3C`** specific. CisContacts read pair contains multiple read contacts |
-| **CisCutMultiContacts** | **`m3C`** specific. CisCutContacts read pair contains multiple read contacts |
-| **TransContacts** | **`m3C`** specific. Number of chromatin contacts where the two loci are on different chromosomes |
-| **TransCutContacts** | **`m3C`** specific. Number of read pairs that are split from the same read at the cut site, and map to different chromosomes |
-| **TransMultiContacts** | **`m3C`** specific. TransContacts read pair contains multiple read contacts |
-| **TransCutMultiContacts** | **`m3C`** specific. TransCutContacts read pair contains multiple read contacts |
-| **ChimericContacts** | **`m3C`** specific. Two reads that are split from the same read, but not at the cut site, possibly due to artificial chimeric synthesis |
-| **NoContacts** | **`m3C`** specific. Not a contact |
-| **MappedFragments** | **`m3C`** specific. Total number of mapped fragments |
+| **CisContacts** | **`m3C`** specific. R1 and R2 from the same read pair map to different loci on the same chromosome, ≥ `min_gap` bp apart. These are the primary source of cis chromatin contacts |
+| **CisCutContacts** | **`m3C`** specific. Two adjacent fragments from the same read (either R1 or R2) split at a restriction enzyme cut site (NlaIII/DpnII) both map to the same chromosome ≥ `min_gap` bp apart. Cut-site-confirmed cis contacts — the restriction site is directly sequenced within the read. Less frequent than CisContacts since read must physically span a cut site |
+| **CisMultiContacts** | **`m3C`** specific.  A R1-R2 read pair producing 3 or more distinct mapping locations (≥ `min_gap` bp apart or on different chromosomes), where at least one read was split at a restriction site. This specific R1-R2 contact is between two locations on the same chromosome. Other contacts from the same read pair are classified independently and may either be CisCutMultiContacts, TransMultiContacts, or TransCutMultiContacts |
+| **CisCutMultiContacts** | **`m3C`** specific. Adjacent restriction cut-site-split fragments from the same read, part of a R1-R2 read pair or single read producing 3 or more distinct mapping locations (≥ `min_gap` bp apart or on different chromosomes). This specific contact is between two adjacent fragments on the same chromosome. Co-occurs with CisMultiContacts, TransMultiContacts, or TransCutMultiContacts from the same read pair depending on where the other locations land |
+| **TransContacts** | **`m3C`** specific. R1 and R2 from the same read pair map to different chromosomes. Inter-chromosomal contacts |
+| **TransCutContacts** | **`m3C`** specific. Two adjacent fragments from the same read split at a restriction enzyme cut site map to different chromosomes. Cut-site-confirmed trans contacts |
+| **TransMultiContacts** | **`m3C`** specific. A R1-R2 read pair producing 3 or more distinct mapping locations where this specific R1-R2 contact is between two locations on different chromosomes. Requires at least one read to be split at a restriction site. The same read pair simultaneously produces other contacts classified independently as CisMultiContacts, CisCutMultiContacts, or TransCutMultiContacts depending on chromosome and cut-site adjacency of each pair |
+| **TransCutMultiContacts** | **`m3C`** specific. Adjacent restriction cut-site-split fragments from the same read, that is a member of R1-R2 read pair or single read mapping to 3 or more separate locations on different chromosomes. Co-occurs with TransMultiContacts, CisMultiContacts, or CisCutMultiContacts from the same read pair depending on where the other locations land |
+| **ChimericContacts** | **`m3C`** specific. Two fragments from the same read that are not adjacent at a restriction cut site. Indicates a chimeric DNA molecule — two unrelated sequences ligated without restriction digestion during library prep. Tracked in QC summary, but excluded from final contact files |
+| **NoContacts** | **`m3C`** specific. Read pairs where all mapping locations fell within `min_gap` bp of each other on the same chromosome — no contact could be called. Tracked in QC summary, but excluded from final contact files |
+| **MappedFragments** | **`m3C`** specific. Total number of read pair names (fragments) processed by contact calling, regardless of outcome (contact, no-contact, chimeric). Used as denominator for CisContactsRatio, TransContactsRatio, MultiContactsRatio |
 | **DeduppedContacts** | **`m3C`** specific. Total number of deduplicated contacts |
 | **ContactsDeduplicationRate** | **`m3C`** specific. (input_contacts - dedup_contacts) / (input_contacts + 0.00001) |
 | **TotalCisContacts** | **`m3C`** specific. Total number of cis contacts |
 | **TotalTransContacts** | **`m3C`** specific. Total number of trans contacts |
-| **TotalMultiContacts** | **`m3C`** specific. Total number of multi contacts (read pair contains multiple read contacts) |
-| **CisContactsRatio** | **`m3C`** specific. TotalCisContacts / No. of mapped fragments |
-| **TransContactsRatio** | **`m3C`** specific. TotalTransContacts / No. of mapped fragments |
-| **MultiContactsRatio** | **`m3C`** specific. TotalMultiContacts / No. of mapped fragments |
-| **UniqueAlignFinalReads** | Final unique mapped total reads after picard deduplication |
-| **UniqueAlignDuplicatedReads** | Paired and unpaired duplicated reads from unique alignment |
-| **UniqueAlignPCRDuplicationRate** | UniqueAlignFinalReads / (UniqueAlignFinalReads + UniqueAlignDuplicatedReads) |
+| **TotalMultiContacts** | **`m3C`** specific. Total number of multi contacts |
+| **CisContactsRatio** | **`m3C`** specific. Ratio of cis contacts: TotalCisContacts / MappedFragments |
+| **TransContactsRatio** | **`m3C`** specific. Ratio of trans contacts: TotalTransContacts / MappedFragments |
+| **MultiContactsRatio** | **`m3C`** specific. Ratio of multi contacts: TotalMultiContacts / MappedFragments |
+| **UniqueAlignFinalReads** | **`mc/m3C`** specific. Final unique mapped total reads after picard deduplication |
+| **UniqueAlignDuplicatedReads** | **`mc/m3C`** specific. Paired and unpaired duplicated reads from unique alignment |
+| **UniqueAlignPCRDuplicationRate** |  **`mc/m3C`** specific. The percentage of reads identified as PCR duplicates: (1 - UniqueAlignFinalReads / (UniqueAlignFinalReads + UniqueAlignDuplicatedReads)) * 100 |
 | **MultiAlignFinalReads** | **`mc`** specific. Final multimapped total reads after picard deduplication |
 | **MultiAlignDuplicatedReads** | **`mc`** specific. Paired and unpaired duplicated reads from multi alignment |
-| **MultiAlignPCRDuplicationRate** | **`mc`** specific. MultiAlignFinalReads / (MultiAlignFinalReads + MultiAlignDuplicatedReads) |
+| **MultiAlignPCRDuplicationRate** | **`mc`** specific. The percentage of multi-mapped reads identified as PCR duplicates: (1 - MultiAlignFinalReads / (MultiAlignFinalReads + MultiAlignDuplicatedReads)) * 100 |
 | **DNAUniqueAlignFinalReads** | **`mct`** specific. Final unique mapped DNA reads after picard deduplication |
 | **DNAUniqueAlignDuplicatedReads** | **`mct`** specific. Paired and unpaired duplicated reads from unique DNA alignment |
-| **DNAUniqueAlignPCRDuplicationRate** | **`mct`** specific. DNAUniqueAlignFinalReads / (DNAUniqueAlignFinalReads + DNAUniqueAlignDuplicatedReads) |
+| **DNAUniqueAlignPCRDuplicationRate** | **`mct`** specific. The percentage of unique DNA reads identified as PCR duplicates: (1 - DNAUniqueAlignFinalReads / (DNAUniqueAlignFinalReads + DNAUniqueAlignDuplicatedReads)) * 100 |
 | **DNAMultiAlignFinalReads** | **`mct`** specific. Final multimapped DNA reads after picard deduplication |
 | **DNAMultiAlignDuplicatedReads** | **`mct`** specific. Paired and unpaired duplicated reads from multi DNA alignment |
-| **DNAMultiAlignPCRDuplicationRate** | **`mct`** specific. DNAMultiAlignFinalReads / (DNAMultiAlignFinalReads + DNAMultiAlignDuplicatedReads) |
+| **DNAMultiAlignPCRDuplicationRate** | **`mct`** specific. The percentage of multi DNA reads identified as PCR duplicates: (1 - DNAMultiAlignFinalReads / (DNAMultiAlignFinalReads + DNAMultiAlignDuplicatedReads)) * 100 |
 | **UniqueAlignFinalDNAReads** | **`mct`** specific. Number of uniquely mapped DNA reads selected from unique alignment BAM based on mCH fraction threshold |
 | **UniqueAlignSelectedDNAReadsRatio** | **`mct`** specific. Fraction of reads passing DNA selection from unique alignment BAM |
 | **MultiAlignFinalDNAReads** | **`mct`** specific. Number of multimapped DNA reads selected from multi alignment BAM based on mCH fraction threshold |
