@@ -456,9 +456,9 @@ Please note 1 single PCR index primer can be used for the whole 384 well plate, 
 | **UniqueAlignFinalReads** | **`mc/m3C`** specific. Final unique mapped total reads after picard deduplication |
 | **UniqueAlignDuplicatedReads** | **`mc/m3C`** specific. Paired and unpaired duplicated reads from unique alignment |
 | **UniqueAlignPCRDuplicationRate** |  **`mc/m3C`** specific. The percentage of reads identified as PCR duplicates: (1 - UniqueAlignFinalReads / (UniqueAlignFinalReads + UniqueAlignDuplicatedReads)) * 100 |
-| **MultiAlignFinalReads** | **`mc`** specific. Final multimapped total reads after picard deduplication |
-| **MultiAlignDuplicatedReads** | **`mc`** specific. Paired and unpaired duplicated reads from multi alignment |
-| **MultiAlignPCRDuplicationRate** | **`mc`** specific. The percentage of multi-mapped reads identified as PCR duplicates: (1 - MultiAlignFinalReads / (MultiAlignFinalReads + MultiAlignDuplicatedReads)) * 100 |
+| **MultiAlignFinalReads** | **`mc/m3C`** specific. Final multimapped total reads after picard deduplication |
+| **MultiAlignDuplicatedReads** | **`mc/m3C`** specific. Paired and unpaired duplicated reads from multi alignment |
+| **MultiAlignPCRDuplicationRate** | **`mc/m3C`** specific. The percentage of multi-mapped reads identified as PCR duplicates: (1 - MultiAlignFinalReads / (MultiAlignFinalReads + MultiAlignDuplicatedReads)) * 100 |
 | **DNAUniqueAlignFinalReads** | **`mct`** specific. Final unique mapped DNA reads after picard deduplication |
 | **DNAUniqueAlignDuplicatedReads** | **`mct`** specific. Paired and unpaired duplicated reads from unique DNA alignment |
 | **DNAUniqueAlignPCRDuplicationRate** | **`mct`** specific. The percentage of unique DNA reads identified as PCR duplicates: (1 - DNAUniqueAlignFinalReads / (DNAUniqueAlignFinalReads + DNAUniqueAlignDuplicatedReads)) * 100 |
