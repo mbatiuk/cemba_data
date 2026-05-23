@@ -10,30 +10,29 @@ from cemba_data.utilities import get_configuration
 
 MODULE_DIR = pathlib.Path(__file__).parent.absolute()
 
+
 def _parse_fastq_path(path):
     """
-    UID pattern: {plate}-{multiplex_group}
+    UID pattern: {plate}
     FASTQ name pattern (produced by link_fastq):
-    {plate}-{multiplex_group}_{lane}_{read_type}.fastq.gz
+      {plate}_{lane}_{read_type}.fastq.gz
+    or legacy with multiplex group prefix:
+      {group}-{plate}_{lane}_{read_type}.fastq.gz
     plate must not contain '-' characters.
     """
     try:
         basename = os.path.basename(path)[:-len('.fastq.gz')]
-        plate, multi_field = basename.split('-')
-        multiplex_group, lane, read_type = multi_field.split('_')
-        try:
-            assert int(multiplex_group) in list(range(1, 7))
-            assert re.match(r'L\d+$', lane)
-        except AssertionError:
+        plate_field, lane, read_type = basename.rsplit('_', 2)
+        plate = plate_field.split('-')[-1]
+        if not re.match(r'L\d+$', lane):
             raise ValueError
     except ValueError:
         raise ValueError(f'Found unknown name pattern in path {path}')
     name_dict = dict(plate=plate,
-                     multiplex_group=multiplex_group,
                      lane=lane,
                      read_type=read_type,
                      fastq_path=path,
-                     uid=f'{plate}-{multiplex_group}')
+                     uid=plate)
     return pd.Series(name_dict)
 
 
@@ -124,19 +123,12 @@ def get_fastq_info(fq_dir, local_outdir="./"):
 	df.rename(columns={'fastq_path': 'R1'}, inplace=True)
 	df['R2'] = df.R1.str.replace('_R1.fastq.gz', '_R2.fastq.gz', regex=False)
 
-
 	df.sort_values(['uid', 'lane', 'R1'], inplace=True)
 	df.to_csv(outfile, sep='\t', index=False)
 	return df
 
 
-def index_name2multiplex_group(x):
-	if 'unknow' not in x.lower():
-		return ((int(x[1:]) - 1) % 12) // 2 + 1
-	else:
-		return 'NA'
-
-def get_random_index(UIDs, local_outdir="./"):
+def get_random_index(UIDs, cells_per_group, local_outdir="./"):
 	if not os.path.exists(local_outdir):
 		os.makedirs(local_outdir, exist_ok=True)
 	outfile = os.path.join(local_outdir, "random_index.txt")
@@ -144,32 +136,30 @@ def get_random_index(UIDs, local_outdir="./"):
 		df_index = pd.read_csv(outfile, sep='\t')
 		return df_index
 
+	random_index_fa = MODULE_DIR / 'random_index_v2.fa'
+	index_seq_dict = _parse_index_fasta(random_index_fa)
+	index_names = list(index_seq_dict.keys())
+
 	R = []
 	for uid in UIDs:
-		multiplex_group = uid.split('-')[1]
-		random_index_fa = MODULE_DIR / 'random_index_v2' / f'random_index_v2.multiplex_group_{multiplex_group}.fa'
-		index_seq_dict = _parse_index_fasta(random_index_fa)
-		index_names = list(index_seq_dict.keys())
 		for index_name in index_names:
 			for read_type in ['R1', 'R2']:
 				R.append([uid, read_type, index_name])
 
 	df_index = pd.DataFrame(R, columns=['uid', 'read_type', 'index_name'])
-	df_index.rename(columns={'uid': 'old_uid'}, inplace=True)
-	df_index['real_multiplex_group'] = df_index.index_name.apply(index_name2multiplex_group)
-	df_index['uid'] = df_index['old_uid'].str.split('-').str[0] + '-' + df_index['real_multiplex_group'].astype(str)
 	df_index['cell_id'] = df_index['uid'] + '-' + df_index['index_name']
 	df_index.to_csv(outfile, sep='\t', index=False)
 	return df_index
 
 
-def demultiplex(fq_dir="fastq", output_dir="out", n_jobs=16, config_path=None, print_only=False):
+def demultiplex(fq_dir="fastq", output_dir="out", n_jobs=16, cells_per_group=64,
+                config_path=None, print_only=False):
 	"""
 	Run demultiplex on local machine.
 	"""
-	smk1 = MODULE_DIR /'demultiplex.smk'
+	smk1 = MODULE_DIR / 'demultiplex.smk'
 	cmd = f'snakemake -s {smk1} --scheduler greedy --printshellcmds --rerun-incomplete ' \
-	      f'-j {n_jobs} --config fq_dir="{fq_dir}" outdir="{output_dir}"'
+	      f'-j {n_jobs} --config fq_dir="{fq_dir}" outdir="{output_dir}" cells_per_group={cells_per_group}'
 
 	if config_path is not None:
 		user_config = get_configuration(config_path)

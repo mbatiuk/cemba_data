@@ -81,8 +81,8 @@ def make_all_snakefile(output_dir, subdir=None,
 	return
 
 
-def mapping_cell_fastq(output_dir, fastq_pattern, config_path, n_group=64,
-				  n_jobs=64, total_memory_gb=None, qos='serial', conda_base='mamba'):
+def mapping_cell_fastq(output_dir, fastq_pattern, config_path, cells_per_group=64,
+			  n_jobs=64, total_memory_gb=None, qos='serial', conda_base='mamba'):
 	output_dir = pathlib.Path(output_dir).absolute()
 	if output_dir.exists():
 		raise FileExistsError(f'Output dir {output_dir} already exist, please delete it or use another path.')
@@ -115,11 +115,11 @@ def mapping_cell_fastq(output_dir, fastq_pattern, config_path, n_group=64,
 			)
 	fastq_df = pd.DataFrame({'R1Path': r1_records, 'R2Path': r2_records})
 
-	# make symlink of fastq files, using dir structure of demultiplex
-	# the cells are randomly grouped though, max group is 64
-	groups = min(n_group, fastq_df.shape[0])
-	for i, (cell_id, (r1_path, r2_path)) in enumerate(fastq_df.sample(fastq_df.shape[0]).iterrows()):
-		group_id = i % groups
+	# distribute cells into groups of ~cells_per_group
+	n_cells = fastq_df.shape[0]
+	n_groups = max(1, (n_cells + cells_per_group - 1) // cells_per_group)
+	for i, (cell_id, (r1_path, r2_path)) in enumerate(fastq_df.sample(n_cells).iterrows()):
+		group_id = (i % n_groups) + 1  # 1-based to match demultiplex output
 		fastq_dir = output_dir / f'Group{group_id}/fastq'
 		fastq_dir.mkdir(exist_ok=True, parents=True)
 
@@ -130,11 +130,11 @@ def mapping_cell_fastq(output_dir, fastq_pattern, config_path, n_group=64,
 			new_r2_path = fastq_dir / r2_path.name
 			new_r2_path.symlink_to(r2_path)
 
-	for group_id in range(groups):
+	for group_id in range(1, n_groups + 1):  # 1-based
 		make_all_snakefile(output_dir, subdir=f'Group{group_id}', pattern="fastq/{cell_id}-R1.fq.gz")
 	if total_memory_gb is None:
 		total_memory_gb = 2 * n_jobs
-	prepare_run(output_dir, cores_per_job=n_jobs, total_memory_gb=total_memory_gb, 
+	prepare_run(output_dir, cores_per_job=n_jobs, total_memory_gb=total_memory_gb,
 	            qos=qos, conda_base=conda_base)
 	return
 

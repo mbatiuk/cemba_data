@@ -7,7 +7,6 @@ log = logging.getLogger(__name__)
 
 def link_cell_fastq(in_fq_dir, out_fq_dir,
                     plate_pattern,
-                    multiplex_group_pattern,
                     well_pattern,
                     read_type_pattern=r'(R[12])',
                     recursive=False):
@@ -15,10 +14,8 @@ def link_cell_fastq(in_fq_dir, out_fq_dir,
     Create symlinks for already-demultiplexed cell-level FASTQ files, renaming to
     the canonical format expected by mapping_cell_fastq:
 
-        {plate}-{multiplex_group}-{well}-R1.fq.gz
-        {plate}-{multiplex_group}-{well}-R2.fq.gz
-
-    All four fields are extracted via user-supplied regexes.
+        {plate}-{well}-R1.fq.gz
+        {plate}-{well}-R2.fq.gz
 
     Parameters
     ----------
@@ -28,10 +25,8 @@ def link_cell_fastq(in_fq_dir, out_fq_dir,
         Output directory for renamed symlinks.
     plate_pattern : str
         Regex with one capture group matching the plate ID.
-    multiplex_group_pattern : str
-        Regex with one capture group matching the multiplex group.
     well_pattern : str
-        Regex with one capture group matching the well ID.
+        Regex with one capture group matching the well/index ID.
     read_type_pattern : str
         Regex with one capture group matching read type (R1/R2).
     recursive : bool
@@ -43,7 +38,6 @@ def link_cell_fastq(in_fq_dir, out_fq_dir,
 
     try:
         plate_re = re.compile(plate_pattern)
-        group_re = re.compile(multiplex_group_pattern)
         well_re = re.compile(well_pattern)
         read_type_re = re.compile(read_type_pattern)
     except re.error as e:
@@ -72,18 +66,7 @@ def link_cell_fastq(in_fq_dir, out_fq_dir,
         except IndexError:
             plate = m.group(0)
 
-        # 2. Multiplex group
-        m = group_re.search(fname)
-        if not m:
-            log.warning(f"No multiplex group match in '{fname}', skipping.")
-            skipped += 1
-            continue
-        try:
-            multiplex_group = m.group(1)
-        except IndexError:
-            multiplex_group = m.group(0)
-
-        # 3. Well
+        # 2. Well / index
         m = well_re.search(fname)
         if not m:
             log.warning(f"No well match in '{fname}', skipping.")
@@ -94,7 +77,7 @@ def link_cell_fastq(in_fq_dir, out_fq_dir,
         except IndexError:
             well = m.group(0)
 
-        # 4. Read type
+        # 3. Read type
         m = read_type_re.search(fname)
         if not m:
             log.warning(f"No read type match in '{fname}', skipping.")
@@ -114,7 +97,7 @@ def link_cell_fastq(in_fq_dir, out_fq_dir,
             skipped += 1
             continue
 
-        dest_name = f"{plate}-{multiplex_group}-{well}-{read_type}.fq.gz"
+        dest_name = f"{plate}-{well}-{read_type}.fq.gz"
         dest = out_fq_dir / dest_name
 
         if dest.exists() or dest.is_symlink():

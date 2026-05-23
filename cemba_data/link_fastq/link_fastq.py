@@ -25,14 +25,18 @@ def link_fastq(in_fq_dir, out_fq_dir,
                recursive=False):
     """
     Standardize FASTQ file names using symlinks.
-    Target naming: {plate}-{multiplex_group}_{lane}_{read_type}.fastq.gz
+    Target naming: {plate}_{lane}_{read_type}.fastq.gz
+
+    When --multiplex_group_pattern (-g) is supplied (legacy data with multiple
+    groups per plate), the group is prepended as a prefix:
+        {group}-{plate}_{lane}_{read_type}.fastq.gz
+    The group prefix is stripped automatically during the demultiplex step;
+    cell-level FASTQ files are always named {plate}-{index}-R1.fq.gz.
 
     Lane resolution priority (highest to lowest):
       1. --lane  (manual override, applied to all files in in_fq_dir)
       2. --lane_pattern  (extracted from each filename via regex)
       3. L001  (hardcoded fallback when neither is provided)
-
-    Multiplex group fallback: '1' (when --multiplex_group_pattern is not provided)
     """
     in_fq_dir = Path(in_fq_dir).absolute()
     out_fq_dir = Path(out_fq_dir).absolute()
@@ -55,6 +59,7 @@ def link_fastq(in_fq_dir, out_fq_dir,
     log.info(f"Found {len(all_files)} FASTQ files in {in_fq_dir}")
 
     # (plate, multiplex_group, lane) -> {read_type: path}
+    # multiplex_group is None when -g is not supplied
     groups = {}
 
     for fpath in all_files:
@@ -70,10 +75,11 @@ def link_fastq(in_fq_dir, out_fq_dir,
         except IndexError:
             plate = m.group(0)
 
-        if '-' in plate:
-            plate = plate.replace('-', '.')
-            log.warning(f"Plate name contained '-' which is reserved as a delimiter. "
-                        f"Replaced with '.' -> '{plate}'. Cell IDs will reflect this change.")
+        if '-' in plate or '_' in plate or '.' in plate:
+            clean = re.sub(r'[-_.]', '', plate)
+            log.warning(f"Plate name '{plate}' contained '-', '_', or '.' which are reserved as delimiters. "
+                        f"Stripped to '{clean}'.")
+            plate = clean
 
         # 2. Read type
         m = read_type_re.search(fname)
@@ -93,8 +99,12 @@ def link_fastq(in_fq_dir, out_fq_dir,
             log.warning(f"Could not normalize read type '{read_type_val}' in '{fname}', skipping.")
             continue
 
-        # 3. Multiplex group
-        multiplex_group = '1'
+        # 3. Multiplex group (legacy, optional)
+        # None when -g not supplied; when supplied, prepended as "{group}-{plate}" prefix
+        # so that files from different groups are uniquely named on disk.
+        # The prefix is stripped by the demultiplex pipeline.
+        # Legacy multiplex groups are always integers 1-6.
+        multiplex_group = None
         if group_re:
             m = group_re.search(fname)
             if m:
@@ -102,6 +112,9 @@ def link_fastq(in_fq_dir, out_fq_dir,
                     multiplex_group = m.group(1)
                 except IndexError:
                     multiplex_group = m.group(0)
+                if multiplex_group not in {'1', '2', '3', '4', '5', '6'}:
+                    log.error(f"Multiplex group '{multiplex_group}' in '{fname}' is not in 1-6. Skipping.")
+                    continue
 
         # 4. Lane: manual > pattern > L001
         if lane:
@@ -133,7 +146,7 @@ def link_fastq(in_fq_dir, out_fq_dir,
     # Warn about unpaired files
     for (plate, group, resolved_lane), files in groups.items():
         if len(files) < 2:
-            log.warning(f"No mate for {plate}-{group}_{resolved_lane}: only {list(files.keys())} found.")
+            log.warning(f"No mate for {plate}_{resolved_lane}: only {list(files.keys())} found.")
 
     # Create symlinks for all files, paired or not
     created = 0
@@ -141,7 +154,10 @@ def link_fastq(in_fq_dir, out_fq_dir,
 
     for (plate, group, resolved_lane), files in groups.items():
         for rt, src in files.items():
-            dest_name = f"{plate}-{group}_{resolved_lane}_{rt}.fastq.gz"
+            if group is not None:
+                dest_name = f"{group}-{plate}_{resolved_lane}_{rt}.fastq.gz"
+            else:
+                dest_name = f"{plate}_{resolved_lane}_{rt}.fastq.gz"
             dest = out_fq_dir / dest_name
 
             if dest.exists() or dest.is_symlink():

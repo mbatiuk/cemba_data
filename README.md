@@ -1,6 +1,6 @@
 # Description
 
-This is an independent fork of cemba_data to map single cell DNA methylation and multiome data generated using snmc-type technology from J. Ecker lab. Original code is available at https://github.com/DingWB/cemba_data and https://github.com/lhqing/cemba_data . Codebase was significantly trimmed and refactored, bug fixes were introduced. To increase simplicity legacy code focused on V1 barcoding, Index primer, bismark mapping and cloud integration was dropped. This is **local/HPC-only** implementation for **version 2 barcoding** (384 spearate random indexes for each cell on a 384 plate) based on **hisat3n mapping**. Multiplex groups (1-6) were kept for compatibility with prior data.
+This is an independent fork of cemba_data to map single cell DNA methylation and multiome data generated using snmc-type technology from J. Ecker lab. Original code is available at https://github.com/DingWB/cemba_data and https://github.com/lhqing/cemba_data . Codebase was significantly trimmed and refactored, bug fixes were introduced. To increase simplicity legacy code focused on V1 barcoding, Index primer, bismark mapping and cloud integration, multiplex groups were dropped. This is **local/HPC-only** implementation for **version 2 barcoding** (384 separate random indexes for each cell on a 384 plate) based on **hisat3n mapping**. In case you need to use multiplex groups - check legacy parameter `--multiplex_group_pattern` in `link-fastq` function.
 
 # Installation
 ## Create environment and install
@@ -176,11 +176,10 @@ During NOMe variant the GCH contain open chromatin information, HCN contain norm
 
 ## Prepare FASTQ files by linking them with correct naming convention
 
-Raw sequencer outputs often have complex or inconsistent naming conventions. Use `link-fastq` to create symbolic links with standardized names: `{plate}-{multiplex_group}_{lane}_{read_type}.fastq.gz`.
+Raw sequencer outputs often have complex or inconsistent naming conventions. Use `link-fastq` to create symbolic links with standardized names: `{plate}_{lane}_{read_type}.fastq.gz` (or `{group}-{plate}_{lane}_{read_type}.fastq.gz` when `-g` is provided for legacy multiplex-group workflows).
 
 Make sure original raw fastq file names follow these minimal expectations:
-- `plate` name must not contain `-` characters. If by mistake `-` is present it will be converted to `.`
-- `multiplex_group` is absent or an integer 1–6
+- `plate` name must not contain `-`, `_`, or `.` characters. If present they will be stripped.
 - `lane` is absent or contains number. `L1`, `1`, `L001`, `l10`, or even `L10000` will be standardized to `L001`, `L010` or `L10000`
 - `read_type` must contain `1` or `2` for correct standardization into `R1` and `R2`
 
@@ -201,7 +200,7 @@ yap link-fastq \
 - `-o` / `--out_fq_dir`: (**required**) Output directory for standardized FASTQ symlinks.
 - `-p` / `--plate_pattern`: (**required**) Regex to extract plate name. Use `()` to capture a sub-portion; without `()` the full match is used.
 - `-r` / `--read_type_pattern`: Regex for R1/R2. Default: `(R[12])`. The matched value must contain `1` or `2`.
-- `-g` / `--multiplex_group_pattern`: (optional) Regex for multiplex group. Use `()` to capture a sub-portion; without `()` the full match is used. If absent, `1` is used for all files.
+- `-g` / `--multiplex_group_pattern`: (optional, legacy) Regex to extract multiplex group from filename. Allowed values are 1-6 digits. When provided, the group is prepended as `{group}-{plate}` in the symlink name. This creates unique symlink names in case of multiple .fastq files per single plate. After demultiplexing group is dropped from cell level .fastq file name. 
 - `--lane_pattern`: (optional) Regex to extract lane from filename. Use `()` to capture a sub-portion; without `()` the full match is used. Ignored if `--lane` is set.
 - `-l` / `--lane`: (optional) Manually assign a lane name to all files in `in_fq_dir`. Number should be present in the `--lane` argument, e.g. `--lane 1` or `--lane L001`. If you have files from multiple sequencing runs of the same library pool you can call `link-fastq` separately per run and use `--lane` to assign a distinct lane number to each run. The pipeline will then merge fastq files correctly. `L001` is used when neither `--lane_pattern` nor `--lane` is provided.
 - `--recursive`: Search `in_fq_dir` recursively for FASTQ files.
@@ -210,9 +209,9 @@ yap link-fastq \
 
 The tool uses Regular Expressions (regex) to find metadata in filenames. If the pattern contains parentheses `()`, only the part inside is extracted. Without `()`, the entire match is used as the value.
 
-For example, to extract the multiplex group from `Sample_1_L001_R1.fq.gz`:
-- `--multiplex_group_pattern "_\d+_"` — matches `_1_`; the full match `_1_` is used as the value.
-- `--multiplex_group_pattern "_(\d+)_"` — underscores are context; only `1` inside `()` is extracted.
+For example, to extract the lane from `Sample_L001_R1.fq.gz`:
+- `--lane_pattern "_L\d+_"` — matches `_L001_`; the full match including underscores is used — **wrong**.
+- `--lane_pattern "_(L\d+)_"` — underscores are context; only `L001` inside `()` is extracted — **correct**.
 
 Use `()` when you need to strip surrounding delimiters or context from the value.
 
@@ -248,20 +247,21 @@ Use `()` when you need to strip surrounding delimiters or context from the value
 | `()` | Capturing group — **only this part is extracted** | `_(\d+)_` extracts `1` from `_1_` |
 | `\.` | Literal dot (escape special characters with `\`) | `\.fastq` matches `.fastq`, not `Xfastq` |
 
+**Note:** if any pattern **starts with `-`**, escape the leading dash with `\`: e.g. `"\-(\d+)-"` instead of `"-(\d+)-"`. This applies to all pattern arguments.
+
 
 ## Prepare cell-level FASTQ files from external sources by linking them with correct naming convention
 
-Use `link-cell-fastq` when working with already-demultiplexed cell-level FASTQ files from an external source where filenames do not follow the canonical format. It creates symlinks renamed to `{plate}-{multiplex_group}-{well}-R1.fq.gz` / `R2.fq.gz` expected by `mapping-cell-fastq`.
+Use `link-cell-fastq` when working with already-demultiplexed cell-level FASTQ files from an external source where filenames do not follow the canonical format. It creates symlinks renamed to `{plate}-{well}-R1.fq.gz` / `R2.fq.gz` expected by `mapping-cell-fastq`.
 
-For example `025307p2-1-C2-A13-R1.fq.gz` (external, contains index primer `C2`) becomes `025307p2-1-A13-R1.fq.gz`.
+For example `025307p2-C2-A13-R1.fq.gz` (external, contains index primer `C2`) becomes `025307p2-A13-R1.fq.gz`.
 
 ```shell
 yap link-cell-fastq \
     --in_fq_dir "external_cell_fastq" \
     --out_fq_dir "cell_fastq" \
     --plate_pattern "^([^-]+)" \
-    --multiplex_group_pattern "^[^-]+-([^-]+)-" \
-    --well_pattern "-([A-][0-9]+)-R[12]" \
+    --well_pattern "-([A-Z][0-9]+)-R[12]" \
     --read_type_pattern "(R[12])" \
     --recursive
 ```
@@ -270,7 +270,6 @@ yap link-cell-fastq \
 - `-i` / `--in_fq_dir`: (**required**) Input directory containing cell-level FASTQ files.
 - `-o` / `--out_fq_dir`: (**required**) Output directory for renamed symlinks.
 - `-p` / `--plate_pattern`: (**required**) Regex with one capture group matching the plate ID.
-- `-g` / `--multiplex_group_pattern`: (**required**) Regex with one capture group matching the multiplex group.
 - `-w` / `--well_pattern`: (**required**) Regex with one capture group matching the well ID.
 - `-r` / `--read_type_pattern`: Regex for R1/R2. Default: `(R[12])`. The matched value must contain `1` or `2`.
 - `--recursive`: Search `in_fq_dir` recursively for FASTQ files.
@@ -284,10 +283,13 @@ The patterns follow the same regex rules described above for `link-fastq`. See t
 yap demultiplex --fq_dir "fastq_dir" \
     --output_dir "your_cell_level_directory" \
     --config_path "m3c_config.ini" \
+    --cells_per_group 64 \
     --n_jobs 16 --print_only
 ```
 
 `--config_path` - path to the `.ini` config file generated by `yap default-mapping-config`. If provided, `total_read_pairs_min` and `total_read_pairs_max` are read from it and passed to the demultiplex pipeline, overriding the built-in defaults (`1` and `10000000`). If omitted, built-in defaults apply.
+
+`--cells_per_group` - number of cells per batch subdirectory. After demultiplex, cells are distributed into `{plate}Group1`, `{plate}Group2`, ... subdirs of this size for parallel mapping on HPC. Default: 64.
 
 `--print_only` - prints demultiplex snakemake command but does not start it interactively
 
@@ -331,14 +333,14 @@ yap mapping --output_dir "your_cell_level_directory" \
 
 Use `mapping-cell-fastq` when you have already-demultiplexed cell-level FASTQ files that are not organized in pipeline expected directory structure, e.g. from external sources. Cells are randomly shuffled into groups and symlinked into the expected directory structure, then the mapping pipeline is prepared for each group.
 
-FASTQ files must follow the canonical naming format `{plate}-{multiplex_group}-{well}-R1.fq.gz` / `R2.fq.gz`. If your files come from an external source with a different naming convention, run `link-cell-fastq` first (see above).
+FASTQ files must follow the canonical naming format `{plate}-{well}-R1.fq.gz` / `R2.fq.gz`. If your files come from an external source with a different naming convention, run `link-cell-fastq` first (see above).
 
 ```shell
 yap mapping-cell-fastq \
     --output_dir "your_cell_level_directory" \
     --config_path "m3c_config.ini" \
     --fastq_pattern "cell_fastq/*.fq.gz" \
-    --n_group 64 \
+    --cells_per_group 64 \
     --n_jobs 64 \
     --total_memory_gb 128 \
     --qos "serial" \
@@ -349,7 +351,7 @@ yap mapping-cell-fastq \
 - `-o` / `--output_dir`: (**required**) Output directory. Must not already exist.
 - `-config` / `--config_path`: (**required**) Path to the mapping config `.ini` file (see `yap default-mapping-config`).
 - `-fq` / `--fastq_pattern`: (**required**) Glob pattern matching all cell-level FASTQ files. **Must be quoted** to prevent shell expansion, e.g. `"cell_fastq/*.fq.gz"`.
-- `--n_group`: Number of groups to split cells into. Rule of the thumb, divide number of cells by 64, so you will get 64 cells per group.
+- `--cells_per_group`: Number of cells per batch subdirectory. Cells are randomly shuffled into groups of this size. Default: 64.
 - `--n_jobs`: Number of parallel jobs per group.
 - `--total_memory_gb`: Total RAM available.
 - `--qos`: QOS for sbatch script.

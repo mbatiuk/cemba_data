@@ -335,11 +335,12 @@ def mapping_cell_fastq_register_subparser(subparser):
     )
 
     parser_req.add_argument(
-        "--n_group",
+        "--cells_per_group",
         type=int,
         required=False,
         default=64,
-        help="Number of groups to split the cells into"
+        help="Number of cells per mapping group directory (Group0, Group1, ...). "
+             "Total number of groups = ceil(n_cells / cells_per_group)."
     )
     parser_req.add_argument(
         "--n_jobs",
@@ -378,6 +379,10 @@ def demultiplex_register_subparser(subparser):
     parser.add_argument("--fq_dir", type=str, default="fastq", help="Input fastq directory")
     parser.add_argument("--output_dir", "-o", type=str, default="test", help="Output directory")
     parser.add_argument("--n_jobs", type=int, default=16, help="Number of jobs to run in parallel")
+    parser.add_argument("--cells_per_group", type=int, default=64,
+                        help="Number of cells per batch subdirectory within each plate. "
+                             "After demultiplex, cells are distributed into {plate}Group1, {plate}Group2, ... "
+                             "subdirs of this size for parallel mapping on HPC.")
     parser.add_argument("--print_only", action="store_true", help="Print commands only")
     parser.add_argument("--config_path", type=str, default=None,
                         help="Path to mapping config .ini file. "
@@ -491,8 +496,11 @@ def link_fastq_register_subparser(subparser):
         "-g", "--multiplex_group_pattern",
         type=str,
         default=None,
-        help="Regex to extract multiplex group from filename. "
-             "If omitted, '1' is used for all files."
+        help="Legacy option. Regex to extract multiplex group (1-6) from filename. "
+             "When provided, group is prepended as '{group}-{plate}' in the symlink name "
+             "so that files from different groups remain uniquely named. "
+             "The group prefix is stripped automatically during demultiplex; "
+             "cell-level files are always named {plate}-{index}-R1.fq.gz."
     )
 
     parser.add_argument(
@@ -551,18 +559,10 @@ def link_cell_fastq_register_subparser(subparser):
     )
 
     parser_req.add_argument(
-        "-g", "--multiplex_group_pattern",
-        type=str,
-        required=True,
-        help="Regex with one capture group matching the multiplex group. "
-             "Example: '-([0-9]+)-'"
-    )
-
-    parser_req.add_argument(
         "-w", "--well_pattern",
         type=str,
         required=True,
-        help="Regex with one capture group matching the well ID. "
+        help="Regex with one capture group matching the well/index ID. "
              "Example: '-([A-P][0-9]+)-R[12]'"
     )
 
