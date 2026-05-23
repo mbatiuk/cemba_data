@@ -75,7 +75,7 @@ rule bam_to_mhap:
         mhap2="mhap/{cell_id}.CH.mhap.gz",
         tbi2="mhap/{cell_id}.CH.mhap.gz.tbi"
     params:
-        annotation_path=lambda wildcards: os.path.join(annotation_dir,f"{wildcards.cell_id.split('_')[0]}.{annotation_suffix}")
+        annotation_path=lambda wildcards: os.path.join(annotation_dir,f"{wildcards.cell_id.split('-')[0]}.{annotation_suffix}")
     resources:
         mem_mb=400
     run:
