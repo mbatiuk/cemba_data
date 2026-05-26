@@ -4,6 +4,7 @@ Demultiplex pipeline
 import glob
 import pathlib
 import re
+import subprocess
 import pandas as pd
 import os
 from cemba_data.utilities import get_configuration
@@ -171,7 +172,7 @@ def demultiplex(fq_dir="fastq", output_dir="out", n_jobs=16, cells_per_group=64,
 
 	print(cmd)
 	if not print_only:
-		os.system(cmd)
+		subprocess.run(cmd, shell=True, check=True)
 
 
 def _read_cutadapt_result(stat_path):

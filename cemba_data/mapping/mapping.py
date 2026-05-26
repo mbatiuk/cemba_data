@@ -1,5 +1,6 @@
 import glob
 import pathlib
+import shutil
 import subprocess
 import os
 import pandas as pd
@@ -150,7 +151,7 @@ def mapping(output_dir,
 	output_folder = os.path.expanduser(output_dir)
 	if not os.path.exists(output_folder):
 		os.makedirs(output_folder, exist_ok=True)
-	os.system(f"cp {config_path} {output_folder}/mapping_config.ini")
+	shutil.copy(config_path, f"{output_folder}/mapping_config.ini")
 	
 	all_uids, _ = glob_wildcards(os.path.join(output_folder, "{uid}/fastq/{cell_id}-R1.fq.gz"),
 	                                        followlinks=True)
@@ -180,7 +181,7 @@ def mapping(output_dir,
 			print(f"{cmd}")
 			with open(log_path, 'a') as f:
 				f.write(cmd + '\n')
-			os.system(cmd)
+			subprocess.run(cmd, shell=True, check=True)
 
 
 def bam_read_to_fastq_read(read, read_type=None):
