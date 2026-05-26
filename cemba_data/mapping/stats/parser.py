@@ -203,6 +203,13 @@ def cell_parser_allc_count(path):
 	if allc_counts.empty:
 		return pd.Series([], dtype='O', name=cell_id)
 
+	# Extract genome_cov
+	genome_cov = (
+		allc_counts['genome_cov'].iloc[0]
+		if 'genome_cov' in allc_counts.columns
+		else np.nan
+	)
+
 	# remove contexts that contain "N"
 	allc_counts = allc_counts.loc[allc_counts.index.map(
 		lambda a: 'N' not in a)].copy()
@@ -260,6 +267,7 @@ def cell_parser_allc_count(path):
 		cov_name = mc_type[1:] if mc_type.startswith('m') else mc_type
 		cell_records[f'{cov_name}Cov'] = row['cov']
 		cell_records[f'{mc_type}Frac'] = row['Frac']
+	cell_records['GenomeBreadth'] = genome_cov
 	cell_records = pd.Series(cell_records, name=cell_id, dtype='O')
 	return cell_records
 

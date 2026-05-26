@@ -98,6 +98,7 @@ COL_NAMES = {
 	('cell_parser_allc_count', 'mCCC'): '',
 	('cell_parser_allc_count', 'CCCCov'): '',
 	('cell_parser_allc_count', 'mCCCFrac'): '',
+	('cell_parser_allc_count', 'GenomeBreadth'): '',
 	('cell_parser_allc_lambda_frac', 'LambdamCGFrac'): '',
 	('cell_parser_allc_lambda_frac', 'LambdaCGCov'): '',
 	('cell_parser_allc_lambda_frac', 'LambdamCHFrac'): '',

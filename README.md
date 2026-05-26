@@ -485,6 +485,7 @@ Please note 1 single PCR index primer can be used for the whole 384 well plate, 
 | **mCCCFrac** | Fraction of methylated cytosines (mCCC) divided by covered cytosines (CCCCov) in the CCC context |
 | **mCGFrac** | Fraction of methylated cytosines (mCG) divided by covered cytosines (CGCov) in the CG context |
 | **mCHFrac** | Fraction of methylated cytosines (mCH) divided by covered cytosines (CHCov) in the CH context |
+| **GenomeBreadth** | Fraction of all genome nucleotide positions covered by at least one read (breadth of coverage) |
 | **LambdamCGFrac** | Fraction of methylated CG cytosines divided by covered CG cytosines on lambda phage spike-in DNA (chrL). Should be ~1 if enzymatic CG methylation was complete. Drop below 1 indicates over-conversion when mCG are stripped of methyl group, or insufficient enzymatic methylation of lambda DNA |
 | **LambdaCGCov** | Total covered CG cytosines on lambda spike-in DNA (chrL) |
 | **LambdamCHFrac** | Fraction of methylated CH (CA + CT + CC) cytosines divided by covered CH cytosines on lambda spike-in DNA (chrL). Should be ~0 since lambda CH in unmethylated, high values indicate underconversion of unmethylated CH into TH |
