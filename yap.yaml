@@ -6,16 +6,13 @@ channels:
 dependencies:
   - python=3.13
   - pip
-  - parallel
-  - snakemake
-  - mamba
   - yaml
-  - cutadapt=5.2
-  - samtools
-  - picard=3.1.1
-  - bedtools
+  - snakemake>=9
+  - cutadapt>=5.2
+  - samtools>=1.21
+  - picard>=3.4.0
   - htslib
-  - subread=2.0.1
+  - subread>=2.0.2
   - papermill
   - jupyter
   - ipykernel
