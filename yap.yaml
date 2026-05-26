@@ -4,13 +4,13 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - python=3.8
+  - python=3.13
   - pip
   - parallel
   - snakemake
   - mamba
   - yaml
-  - cutadapt=4.7
+  - cutadapt=5.2
   - samtools
   - picard=3.1.1
   - bedtools

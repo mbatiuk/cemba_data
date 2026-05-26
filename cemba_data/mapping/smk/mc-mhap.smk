@@ -125,7 +125,7 @@ rule unique_reads_allc:
         tbi="allc/{cell_id}.allc.tsv.gz.tbi",
         stats="allc/{cell_id}.allc.tsv.gz.count.csv"
     threads:
-        1.5
+        1
     resources:
         mem_mb=500
     run:

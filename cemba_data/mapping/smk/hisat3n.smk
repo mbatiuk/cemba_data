@@ -21,7 +21,7 @@ rule sort_fq:
     output:
         fq=temp("fastq/{cell_id}-{read_type}_sort.fq"),
     threads:
-        1.5
+        1
     resources:
         high_io_job=1,
         mem_mb=200
@@ -45,7 +45,7 @@ rule trim:
         cutadapt -a R1Adapter={config[r1_adapter]} \
 -A R2Adapter={config[r2_adapter]} --report=minimal \
 -O {config[overlap]} -q {config[quality_threshold]} -u {config[r1_left_cut]} -u -{config[r1_right_cut]} \
--U {config[r2_left_cut]} -U -{config[r2_right_cut]} -Z \
+-U {config[r2_left_cut]} -U -{config[r2_right_cut]} \
 -m {config[min_read_length]}:{config[min_read_length]} \
 --pair-filter 'both' -o {output.R1} -p {output.R2} \
 {input.R1} {input.R2} > {output.stats}
@@ -273,7 +273,7 @@ rule unique_reads_allc:
         tbi="allc/{cell_id}.allc.tsv.gz.tbi",
         stats="allc/{cell_id}.allc.tsv.gz.count.csv"
     threads:
-        1.5
+        1
     resources:
         mem_mb=500
     # benchmark:

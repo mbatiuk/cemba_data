@@ -179,7 +179,7 @@ rule multi_reads_allc:
         allc="allc-multi/{cell_id}.allc_multi.tsv.gz",
         stats="allc-multi/{cell_id}.allc_multi.tsv.gz.count.csv"
     threads:
-        1.5
+        1
     resources:
         mem_mb=500
     run:

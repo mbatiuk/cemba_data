@@ -114,7 +114,7 @@ rule run_demultiplex:
         R2=lambda wildcards: outdir+f"/{wildcards.uid}_fq_unknown/demultiplex/{'{{name}}'}-R2.fq.gz"
     run:
         shell(f"mkdir -p {params.outdir}")
-        shell(f"cutadapt -Z -e 0.01 --no-indels -g file:{params.random_index_fa} -o  {params.R1} -p {params.R2} {input.R1} {input.R2} > {output.stats_out}")
+        shell(f"cutadapt -e 0.01 --no-indels -g file:{params.random_index_fa} -o  {params.R1} -p {params.R2} {input.R1} {input.R2} > {output.stats_out}")
          # for the reads startswith random index present in random_index_fa, will be taken and write into 1 fastq (1 cell),
          # cut the left 8 bp sequence and add the random index name (A2, P24) into the cell fastq name.
          # one uid will be broken down into 384 cells.

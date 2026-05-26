@@ -26,7 +26,7 @@ def judge_job_success(job_id, retry=3):
             p = subprocess.run(['sacct', '-j', str(job_id), '--format=jobid,exitcode'],
                                check=True, stdout=subprocess.PIPE, encoding='utf8')
             sacct_txt = p.stdout
-            pt = re.compile(f'{job_id}\s+0:0')
+            pt = re.compile(rf'{job_id}\s+0:0')
             if pt.search(sacct_txt):
                 return True
             else:

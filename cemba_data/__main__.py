@@ -507,7 +507,7 @@ def link_fastq_register_subparser(subparser):
         "--lane_pattern",
         type=str,
         default=None,
-        help="Regex to extract lane from filename (e.g. 'L\d+'). "
+        help=r"Regex to extract lane from filename (e.g. 'L\d+'). "
              "Ignored if --lane is provided. "
              "If neither is provided, L001 is used as fallback."
     )
