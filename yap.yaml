@@ -28,4 +28,3 @@ dependencies:
   - pysam
   - pip:
     - git+https://github.com/mbatiuk/cemba_data
-    - git+https://github.com/DingWB/ALLCools

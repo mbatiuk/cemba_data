@@ -2,6 +2,7 @@ import os
 import pathlib
 import cemba_data.mapping
 from cemba_data.mapping import *
+from cemba_data.mapping.allc import bam_to_allc, extract_allc
 
 SMK_DIR = pathlib.Path(cemba_data.mapping.__file__).parent / 'smk'
 include:
@@ -277,16 +278,19 @@ rule unique_reads_allc:
         mem_mb=500
     # benchmark:
     #         "fastq/{cell_id}.unique_reads_allc.benchmark.txt"
-    shell:
-        """
-        mkdir -p {allc_dir}
-        allcools bam-to-allc --bam_path {input.bam} \
---reference_fasta {config[reference_fasta]} --output_path {output.allc} \
---cpu {threads} --num_upstr_bases {config[num_upstr_bases]} \
---num_downstr_bases {config[num_downstr_bases]} \
---compress_level {config[compress_level]} --save_count_df \
---convert_bam_strandness
-        """
+    run:
+        pathlib.Path(output.allc).parent.mkdir(parents=True, exist_ok=True)
+        bam_to_allc(
+            bam_path=input.bam,
+            reference_fasta=config["reference_fasta"],
+            output_path=output.allc,
+            cpu=threads,
+            num_upstr_bases=config["num_upstr_bases"],
+            num_downstr_bases=config["num_downstr_bases"],
+            compress_level=config["compress_level"],
+            save_count_df=True,
+            convert_bam_strandness=True,
+        )
 
 # CGN extraction from ALLC
 rule unique_reads_cgn_extraction:
@@ -302,10 +306,12 @@ rule unique_reads_cgn_extraction:
         1
     resources:
         mem_mb=100
-    shell:
-        """
-        mkdir -p {allc_mcg_dir}
-        allcools extract-allc --strandness merge \
---allc_path  {input.allc} --output_prefix {params.prefix} \
---mc_contexts {mcg_context} --chrom_size_path {config[chrom_size_path]}
-        """
+    run:
+        pathlib.Path(output.allc).parent.mkdir(parents=True, exist_ok=True)
+        extract_allc(
+            allc_path=input.allc,
+            output_prefix=params.prefix,
+            mc_contexts=mcg_context,
+            chrom_size_path=config["chrom_size_path"],
+            strandness="merge",
+        )

@@ -2,6 +2,7 @@ import os,sys
 import pathlib
 import cemba_data.mapping
 from cemba_data.mapping import *
+from cemba_data.mapping.allc import bam_to_allc
 
 SMK_DIR = pathlib.Path(cemba_data.mapping.__file__).parent / 'smk'
 include:
@@ -132,16 +133,18 @@ rule unique_reads_allc:
         1.5
     resources:
         mem_mb=500
-    shell:
-        """
-        mkdir -p {allc_dir}
-        allcools bam-to-allc --bam_path {input.bam} \
---reference_fasta {config[reference_fasta]} --output_path {output.allc} \
---num_upstr_bases {config[num_upstr_bases]} \
---num_downstr_bases {config[num_downstr_bases]} \
---compress_level {config[compress_level]} --save_count_df \
---convert_bam_strandness
-        """
+    run:
+        pathlib.Path(output.allc).parent.mkdir(parents=True, exist_ok=True)
+        bam_to_allc(
+            bam_path=input.bam,
+            reference_fasta=config["reference_fasta"],
+            output_path=output.allc,
+            num_upstr_bases=config["num_upstr_bases"],
+            num_downstr_bases=config["num_downstr_bases"],
+            compress_level=config["compress_level"],
+            save_count_df=True,
+            convert_bam_strandness=True,
+        )
 
 rule dedup_multi_bam: #dedup_unique_bam is included in mc.smk
     input:
@@ -183,13 +186,16 @@ rule multi_reads_allc: #unique reads allc is included in rule: mc_unique_reads_a
         1.5
     resources:
         mem_mb=500
-    shell:
-        """
-        mkdir -p {allc_multi_dir}
-        allcools bam-to-allc --bam_path {input.bam} \
---reference_fasta {config[reference_fasta]} --output_path {output.allc} \
---num_upstr_bases {config[num_upstr_bases]} \
---num_downstr_bases {config[num_downstr_bases]} \
---compress_level {config[compress_level]} --save_count_df \
---min_mapq 0 --convert_bam_strandness
-        """
+    run:
+        pathlib.Path(output.allc).parent.mkdir(parents=True, exist_ok=True)
+        bam_to_allc(
+            bam_path=input.bam,
+            reference_fasta=config["reference_fasta"],
+            output_path=output.allc,
+            num_upstr_bases=config["num_upstr_bases"],
+            num_downstr_bases=config["num_downstr_bases"],
+            compress_level=config["compress_level"],
+            min_mapq=0,
+            save_count_df=True,
+            convert_bam_strandness=True,
+        )

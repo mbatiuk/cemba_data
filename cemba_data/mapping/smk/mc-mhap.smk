@@ -2,6 +2,7 @@ import os,sys
 import pathlib
 import cemba_data.mapping
 from cemba_data.mapping import *
+from cemba_data.mapping.allc import bam_to_allc
 
 SMK_DIR = pathlib.Path(cemba_data.mapping.__file__).parent / 'smk'
 include:
@@ -127,16 +128,18 @@ rule unique_reads_allc:
         1.5
     resources:
         mem_mb=500
-    shell:
-        """
-        mkdir -p {allc_dir}
-        allcools bam-to-allc --bam_path {input.bam} \
---reference_fasta {config[reference_fasta]} --output_path {output.allc} \
---num_upstr_bases {config[num_upstr_bases]} \
---num_downstr_bases {config[num_downstr_bases]} \
---compress_level {config[compress_level]} --save_count_df \
---convert_bam_strandness
-        """
+    run:
+        pathlib.Path(output.allc).parent.mkdir(parents=True, exist_ok=True)
+        bam_to_allc(
+            bam_path=input.bam,
+            reference_fasta=config["reference_fasta"],
+            output_path=output.allc,
+            num_upstr_bases=config["num_upstr_bases"],
+            num_downstr_bases=config["num_downstr_bases"],
+            compress_level=config["compress_level"],
+            save_count_df=True,
+            convert_bam_strandness=True,
+        )
 
 # Convert bam to mhap
 rule bam_to_mhap:
