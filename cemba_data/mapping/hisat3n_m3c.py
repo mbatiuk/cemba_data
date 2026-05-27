@@ -39,7 +39,7 @@ def _span_combination(spans, min_length):
     """
     slices = []
     if len(spans) == 0:
-        raise
+        raise ValueError('spans cannot be empty')
     elif len(spans) == 1:
         base_start, base_end = spans[0]
         slices.append(slice(base_start, base_end))
