@@ -221,8 +221,8 @@ def split_hisat3n_unmapped_reads_single_end(fastq_path,
     fastq_path
         Input fastq path
     output_prefix
-        Output fastq prefix, R1 and R2 will be saved as <output_prefix>.R1.fastq and <output_prefix>.R2.fastq
-        Because R1 and R2 need to be mapped separately in the SE mapping.
+        Output fastq prefix, R1 will be saved as <output_prefix>.R1.fastq
+        Because R1 needs to be mapped in the SE mapping. All reads are treated as R1 for single end sequencing run.
     min_length
         Minimum read length to keep
 
