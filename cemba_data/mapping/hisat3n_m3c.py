@@ -773,6 +773,7 @@ def call_chromatin_contacts(bam_path: str,
                 cur_read_parts = [read]
         if len(cur_read_parts) > 0:
             # process the last read pair
+            count += 1
             results = _extract_contact_info(cur_read_parts, span=span)
             out_contacts.write(results)
 
