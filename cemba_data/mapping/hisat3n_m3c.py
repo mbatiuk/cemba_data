@@ -108,10 +108,13 @@ def _split_read_and_make_combination(read, split_pattern, min_length=30):
         yield _read, _slice
 
 
-def _trim_site(read_and_slice, read_type):
+def _trim_site(read_and_slice, read_type, read_length):
     """
     Remove DpnII or MboI site from the left read, the site will be included in the right read;
-    remove NalIII site from the right read, the site will be included in the left read.
+    remove NlaIII site from the right read, the site will be included in the left read.
+
+    Trimming is only applied when the fragment boundary is at a real restriction site junction,
+    not at the natural start (start == 0) or end (stop == read_length) of the original read.
     """
     read, read_slice = read_and_slice
     start = read_slice.start
@@ -119,21 +122,21 @@ def _trim_site(read_and_slice, read_type):
 
     sequence = read.sequence
     if read_type[-1] == '1':
-        if sequence[-3:] == 'ATC':
+        if stop < read_length and sequence[-3:] == 'ATC':
             # If 3' is DpnII or MboI site, clip it (from the left read)
             read = read[:-4]
             stop -= 4
-        if sequence[:3] == 'CAT':
-            # If 5' is NalIII site, clip it (from the right read)
+        if start > 0 and sequence[:3] == 'CAT':
+            # If 5' is NlaIII site, clip it (from the right read)
             read = read[4:]
             start += 4
     elif read_type[-1] == '2':
-        if sequence[-4:-1] == 'GAT':
+        if stop < read_length and sequence[-4:-1] == 'GAT':
             # If 3' is DpnII or MboI site, clip it (from the left read)
             read = read[:-4]
             stop -= 4
-        if sequence[1:4] == 'ATG':
-            # If 5' is NalIII site, clip it (from the right read)
+        if start > 0 and sequence[1:4] == 'ATG':
+            # If 5' is NlaIII site, clip it (from the right read)
             read = read[4:]
             start += 4
     else:
@@ -183,13 +186,14 @@ def split_hisat3n_unmapped_reads(fastq_path,
             # read type and split pattern
             read_type = read.name[-1]
             split_pattern = r1_split_pattern if read_type == '1' else r2_split_pattern
+            read_length = len(read.sequence)
 
             read_split_iter = _split_read_and_make_combination(
                 read=read, split_pattern=split_pattern, min_length=min_length)
             range_set = set()
             for i, read_and_slice in enumerate(read_split_iter):
                 # remove overlapping enzyme cut site
-                read_split, read_range = _trim_site(read_and_slice, read_type)
+                read_split, read_range = _trim_site(read_and_slice, read_type, read_length)
                 if len(read_split.sequence) < min_length:
                     # because trim site further reduced some reads' length
                     continue
@@ -241,12 +245,13 @@ def split_hisat3n_unmapped_reads_single_end(fastq_path,
             dnaio.open(out_path, mode='w') as out:
         for read in f:
             # read type and split pattern
+            read_length = len(read.sequence)
             read_split_iter = _split_read_and_make_combination(
                 read=read, split_pattern=split_pattern, min_length=min_length)
             range_set = set()
             for i, read_and_slice in enumerate(read_split_iter):
                 # remove overlapping enzyme cut site
-                read_split, read_range = _trim_site(read_and_slice, read_type)
+                read_split, read_range = _trim_site(read_and_slice, read_type, read_length)
                 if len(read_split.sequence) < min_length:
                     # because trim site further reduced some reads' length
                     continue
