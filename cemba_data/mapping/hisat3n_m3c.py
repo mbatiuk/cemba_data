@@ -307,39 +307,6 @@ class ReadOverlapGroup:
             return False
 
 
-class ReadSplitOverlapGroup:
-    """
-    Collect overlapped reads based on read cut site split position
-    This class is used to collect overlapping read parts, genome coordinates are not used
-    """
-
-    def __init__(self, read):
-        # genomic position of the read group
-        self.start = read.get_tag('SS')  # SS is the start position of the read slice
-        self.end = read.get_tag('SE')  # SE is the end position of the read slice
-        self.reads = [read]
-        self.is_read1 = read.is_read1
-
-    def add_if_overlap(self, read):
-        if read.is_read1 != self.is_read1:
-            # not the same read type
-            return False
-
-        # apply span to new read
-        start = read.get_tag('SS')
-        end = read.get_tag('SE')
-
-        if (end > self.start) and (start < self.end):
-            self.reads.append(read)
-            self.start = min(self.start, start)
-            self.end = max(self.end, end)
-            # overlap
-            return True
-        else:
-            # not overlap
-            return False
-
-
 def _remove_overlapped_split_read_parts_single_read_type(read_parts):
     """Deal with single read type, use this function inside _remove_overlapped_split_read_parts"""
     final_reads = []
