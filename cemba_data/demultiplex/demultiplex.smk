@@ -62,17 +62,16 @@ rule summary_demultiplex:
         df_stats['group'] = df_stats.apply(
             lambda r: get_group_from_dirs(r['uid'], r['index_name']), axis=1)
         df_stats = df_stats.loc[df_stats['group'] != 'NA']
-        df_stats['group_dir'] = df_stats['uid'] + 'Group' + df_stats['group'].astype(str)
         df_stats['cell_id'] = df_stats['uid'] + '-' + df_stats['index_name']
         df_cell=df_stats.groupby('cell_id').agg({
                                         'Trimmed':'sum',
                                         'TotalPair':'sum',
                                         'index_name':lambda i: i.unique()[0],
-                                        'group_dir':lambda i: i.unique()[0]})
+                                        'uid':lambda i: i.unique()[0]})
         df_cell.rename(columns={'Trimmed': 'CellInputReadPairs',
                                 'TotalPair': 'MultiplexedTotalReadPairs',
                                 'index_name': 'IndexName',
-                                'group_dir': 'UID'},inplace=True)
+                                'uid': 'UID'},inplace=True)
         df_cell['CellBarcodeRate'] = df_cell['CellInputReadPairs'] / df_cell['MultiplexedTotalReadPairs']
         df_cell.to_csv(output.csv)
         if os.path.exists(os.path.join(outdir,"fastq_info.txt")):
