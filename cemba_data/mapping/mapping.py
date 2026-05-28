@@ -289,6 +289,9 @@ def _build_config_str(config, int_parameters, str_parameters, float_parameters=N
     """Build a typed config dict and serialize it to a Snakemake config string."""
     typed_config = {}
 
+    def _is_none_ish(val):
+        return val is None or str(val).strip().lower() in ('none', '')
+
     for k, default in int_parameters.items():
         if k in config:
             typed_config[k] = int(config[k])
@@ -312,16 +315,23 @@ def _build_config_str(config, int_parameters, str_parameters, float_parameters=N
 
     for k, default in str_parameters.items():
         if k in config:
-            typed_config[k] = f"'{config[k]}'"
-        else:
-            if default != 'required':
-                typed_config[k] = f"'{default}'"
+            value = config[k]
+            if _is_none_ish(value):
+                typed_config[k] = None
             else:
+                typed_config[k] = f"'{value}'"
+        else:
+            if default == 'required':
                 raise ValueError(f'Required parameter {k} not found in config. '
                                  f'You can print the newest mapping config template via "yap default-mapping-config".')
+            if _is_none_ish(default):
+                typed_config[k] = None
+            else:
+                typed_config[k] = f"'{default}'"
 
     config_str = "config = {\n"
     for k, v in typed_config.items():
+        # When v is the Python object None, f"{v}" produces the literal None (no quotes)
         config_str += f"    '{k}': {v},\n"
     config_str += "}\n"
     return config_str
