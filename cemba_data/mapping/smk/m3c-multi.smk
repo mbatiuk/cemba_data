@@ -45,7 +45,7 @@ rule summary:
         csv="MappingSummary.csv.gz"
     run:
         # execute any post-mapping script before generating the final summary
-        shell(config['post_mapping_script'])
+        shell(config['post_mapping_script'] or 'true')
 
         # generate the final summary
         indir = '.'
