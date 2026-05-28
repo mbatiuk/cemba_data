@@ -24,12 +24,10 @@ def write_qsub_commands(output_dir, cores_per_job, total_memory_gb=None,
 			for uid in uid_order.index:
 				if uid in cmds:
 					f.write(cmds.pop(uid) + '\n')
-			try:
-				assert len(cmds) == 0
-			except AssertionError as e:
+			if len(cmds) != 0:
 				print(cmds)
 				print(uid_order)
-				raise e
+				raise ValueError(f'UIDs in Snakefiles not found in UIDTotalCellInputReadPairs.csv: {list(cmds.keys())}')
 		except FileNotFoundError:
 			# uid_order file do not exist (when starting from cell FASTQs)
 			for cmd in cmds.values():
@@ -60,12 +58,10 @@ def write_sbatch_commands(output_dir, cores_per_job, script_dir, total_mem_mb, q
 			for uid in uid_order.index:
 				if uid in cmds:
 					f.write(cmds.pop(uid) + '\n')
-			try:
-				assert len(cmds) == 0
-			except AssertionError as e:
+			if len(cmds) != 0:
 				print(cmds)
 				print(uid_order)
-				raise e
+				raise ValueError(f'UIDs in Snakefiles not found in UIDTotalCellInputReadPairs.csv: {list(cmds.keys())}')
 		except FileNotFoundError:
 			# uid_order file do not exist (when starting from cell FASTQs)
 			for cmd in cmds.values():
