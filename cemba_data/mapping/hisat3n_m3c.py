@@ -637,7 +637,7 @@ def _contact_to_hic_format(output_prefix):
 
 def remove_overlap_read_parts(in_bam_path, out_bam_path):
     with pysam.AlignmentFile(in_bam_path) as bam, \
-            pysam.AlignmentFile(out_bam_path, header=bam.header, mode='w') as out_bam:
+            pysam.AlignmentFile(out_bam_path, header=bam.header, mode='wb') as out_bam:
         count = 0
         cur_read_pair_name = None
         cur_read_parts = []
