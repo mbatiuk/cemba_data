@@ -30,7 +30,7 @@ def make_all_snakefile(output_dir, subdir=None,
 	"""
 	try:
 		mapping_config_name = [file for file in os.listdir(output_dir) if file.startswith('mapping_config.')][0]
-	except:
+	except (IndexError, FileNotFoundError):
 		raise ValueError(f"Could not find mapping_config.* under {output_dir}")
 	config = get_configuration(os.path.join(output_dir, mapping_config_name))
 	try:
