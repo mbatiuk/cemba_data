@@ -230,7 +230,8 @@ rule sort_bam_by_pos:
         1
     shell:
         """
-        samtools sort -O BAM -o {output.bam} {input.bam}
+        samtools addreplacerg -r "ID:{wildcards.cell_id}" -r "SM:{wildcards.cell_id}" -w -o - {input.bam} |\
+        samtools sort -O BAM -o {output.bam} -
         """
 
 # remove PCR duplicates

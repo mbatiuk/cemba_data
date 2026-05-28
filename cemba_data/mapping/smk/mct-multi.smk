@@ -100,7 +100,8 @@ rule sort_dna_bam:
         1
     shell:
         """
-        samtools sort -O BAM -o {output.bam} {input.bam}
+        samtools addreplacerg -r "ID:{wildcards.cell_id}" -r "SM:{wildcards.cell_id}" -w -o - {input.bam} |\
+        samtools sort -O BAM -o {output.bam} -
         """
 
 # Separate unique aligned reads and multi-aligned reads with length > 30
