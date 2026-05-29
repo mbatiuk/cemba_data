@@ -313,6 +313,8 @@ yap mapping --output_dir "your_cell_level_directory" \
   If loaded as a module on HPC specify "module <module_name>", e.g. "module mamba"
   You can also provide custom path to your conda installation e.g. "/custom/path/to/conda.sh"
 
+`--time_limit` - wall time limit for each sbatch job in `D-HH:MM:SS` format. Default: `2-00:00:00`
+
 `--print_only` - writes snakemake, sbatch and qsub scripts into your_cell_level_directory/snakemake/
 
 ### Run mapping from generated script files

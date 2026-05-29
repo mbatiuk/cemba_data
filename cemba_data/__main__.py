@@ -404,6 +404,8 @@ def mapping_register_subparser(subparser):
     parser.add_argument("--snakemake_template", type=str, default=None, help="Path to the snakemake template")
     parser.add_argument("--qos", type=str, default='serial', help="QOS parameter for sbatch script")
     parser.add_argument("--conda_base", type=str, default='mamba', help="Conda base")
+    parser.add_argument("--time_limit", type=str, default='2-00:00:00',
+                        help="Wall time limit for each sbatch job (format: D-HH:MM:SS). Default: 2-00:00:00")
     return
 
 

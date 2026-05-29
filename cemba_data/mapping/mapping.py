@@ -144,7 +144,8 @@ def mapping(output_dir,
                 config_path="mapping_config.ini",
                 n_jobs=64, total_jobs=12, total_memory_gb=None,
                 print_only=False,
-                snakemake_template=None, qos='serial', conda_base='mamba'):
+                snakemake_template=None, qos='serial', conda_base='mamba',
+                time_limit='2-00:00:00'):
 	"""
 	Run mapping pipeline on local machine.
 	"""
@@ -175,7 +176,7 @@ def mapping(output_dir,
 		prepare_run(output_dir=pathlib.Path(output_folder).absolute(),
 		            total_jobs=total_jobs,
 		            cores_per_job=n_jobs, total_memory_gb=total_memory_gb,
-		            qos=qos, conda_base=conda_base)
+		            qos=qos, conda_base=conda_base, time_limit=time_limit)
 	else:
 		for cmd in cmds:
 			print(f"{cmd}")

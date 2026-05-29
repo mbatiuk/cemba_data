@@ -113,11 +113,10 @@ yap qsub \
 	return
 
 
-def prepare_sbatch(name, snakemake_dir, qos, total_memory_gb=None, cores_per_job=None, conda_base='mamba'):
+def prepare_sbatch(name, snakemake_dir, qos, total_memory_gb=None, cores_per_job=None, conda_base='mamba', time_limit='2-00:00:00'):
 	input_total_mem_mb = total_memory_gb * 1024 if total_memory_gb is not None else None
 	output_dir = snakemake_dir.parent
 	sbatch_cores_per_job = cores_per_job if cores_per_job is not None else 62
-	time_limit = '2-00:00:00'
 
 	total_mem_mb = input_total_mem_mb if input_total_mem_mb is not None else 400 * 1024
 	sbatch_mem = f'{total_mem_mb // 1024}G'
@@ -163,7 +162,7 @@ def prepare_sbatch(name, snakemake_dir, qos, total_memory_gb=None, cores_per_job
 
 
 def prepare_run(output_dir, total_jobs=12, cores_per_job=10, total_memory_gb=None,
-				name=None, qos='serial', conda_base='mamba'):
+				name=None, qos='serial', conda_base='mamba', time_limit='2-00:00:00'):
 	output_dir = pathlib.Path(output_dir).absolute()
 	config = get_configuration(output_dir / 'mapping_config.ini')
 	mode = config['mode']
@@ -184,7 +183,7 @@ def prepare_run(output_dir, total_jobs=12, cores_per_job=10, total_memory_gb=Non
 				 total_memory_gb=total_memory_gb)
 	prepare_sbatch(name=name, snakemake_dir=snakemake_dir, qos=qos,
 				   total_memory_gb=total_memory_gb, cores_per_job=cores_per_job,
-				   conda_base=conda_base)
+				   conda_base=conda_base, time_limit=time_limit)
 
 	print(f"Once all commands are executed successfully, use 'yap summary' to generate final mapping summary.")
 	return
