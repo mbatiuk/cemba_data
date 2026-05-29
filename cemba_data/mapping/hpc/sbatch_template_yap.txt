@@ -2,11 +2,11 @@
 #
 #
 #   Copy/edit this script as desired.  Launch script with sbatch on a login node.
-#    
-#   
+# 
 #
-#   Increase threads gradually while looking for optimal setting. Original suggestion was 48, here matched with --cpus-per-task
-#  
+#
+#
+#
 #
 #----------------------------------------------------
 
