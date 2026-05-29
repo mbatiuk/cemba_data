@@ -1,0 +1,228 @@
+---
+title: "Summary of cemba_data mapping pipeline changes"
+subtitle: "Repository: [github.com/mbatiuk/cemba_data](https://github.com/mbatiuk/cemba_data) · forked from Ecker lab [github.com/DingWB/cemba_data](https://github.com/DingWB/cemba_data)"
+date: May 29, 2026
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    self-contained: true
+---
+
+
+## What is this software?
+
+`cemba_data` (also known as **YAP — Yet Another Pipeline**) is a bioinformatics pipeline for processing single-cell snmc-type epigenetics data. It automates the steps needed to go from raw sequencing files (FASTQ) to analysis-ready data files, including:
+
+- **Demultiplexing** — separating raw sequencing reads by sample/cell identity
+- **Read mapping** — aligning reads to a reference genome using the HISAT-3N aligner
+- **Quality control** — flagging and summarising metrics per cell (duplication rate, mapping rate, coverage, etc.)
+- **Output generation** — producing methylation call files and chromatin contact files
+
+The pipeline is designed to run on high-performance computing (HPC) clusters and coordinates hundreds of per-cell jobs automatically via Snakemake, a scientific workflow management system, for highly parallelized data processing.
+
+---
+
+## Scope of work
+
+All changes described in this report are relative to the upstream public fork (`DingWB/cemba_data`) used as the starting point.
+
+| Metric | Value |
+|---|---|
+| Total commits | ~130 |
+| Files changed | ~159 |
+| Lines added | ~4,800 |
+| Lines removed | ~21,200 (legacy cleanup) |
+
+The large number of lines removed reflects deliberate removal of outdated, unused, or out-of-scope code — a form of maintenance that reduces complexity and the risk of future bugs. Of the ~159 files, a portion represent files relocated to new module directories as part of the code restructuring rather than entirely new files; the content of those files was also modified, not merely moved.
+
+---
+
+## Key contributions
+
+### 1. Bug fixes
+
+A substantial portion of the work involved identifying and fixing bugs that had been silently present in the pipeline. Several of these would have caused incorrect scientific results without producing any obvious error.
+
+**Incorrect read mapping rate for snm3C (m3c) runs.** In snm3C sequencing, reads fall into two categories: regular reads that align directly to the genome, and reads that span a restriction enzyme - ligation site joining distant DNA pieces, and must be split to align with the genome. Each category was reported with its own separate mapping rate, but no overall mapping rate across all reads was calculated. Because each partial rate covered only a subset of reads, both figures appeared low — falling below typical QC thresholds and incorrectly suggesting poor data quality. Compounding this, single-end mapped reads were already counted within the paired-end total, but were also being added on top of it again, inflating the denominator and further deflating the apparent mapping rate. The fix calculates a single correct overall mapping rate for all reads together, parsed directly from the BAM alignment files.
+
+**Broken Snakemake shell command due to misplaced quote.** A misplaced closing quote in a Snakemake shell command caused the output path string for `MappingSummary.csv.gz` to remain unclosed, with the rest of the command line — including the `&&` chaining operators — being interpreted as part of the filename rather than command. This silently broke the mapping summary step: the summary file was never written, and the pipeline appeared to complete without error. The quote was repositioned and the command structure corrected.
+
+**Configuration parameters silently ignored.** The pipeline allows users to customise its behaviour through `.ini` configuration files. Multiple parameters set by users in these files were never actually passed into the pipeline's internal workflow engine (Snakemake). Affected settings included minimum read length (`length_threshold`), minimum contact distance (`min_gap`), read filtering options (`total_read_pairs_min/max`), and several methylation analysis options. These have all been wired through correctly.
+
+**Incorrect output format.** One processing step (`remove_overlap_read_parts`) was writing output in SAM format (text) instead of the expected BAM format (compressed binary). While downstream steps could still run, they had to handle the uncompressed text format rather than the expected binary, leading to unnecessarily large disk space usage and potential compatibility issues in future versions of the software.
+
+**Off-by-one error in chromatin contact counting.** The code that counts mapped chromatin contact fragments (`mapped_frag`) was always off by one contact because the last read pair processed in a loop was never counted. Despite the difference being small, this produced systematically underreported statistics.
+
+**NOMeseq mode flag not passed.** During methylation + chromatin accessibility (mCT NOMeseq) runs, the `nome` flag was always `False` inside the pipeline regardless of the user's configuration, silently disabling NOMeseq-specific read selection.
+
+**Restriction site trimming too aggressive.** Restriction sites are trimmed from split reads. The trimming logic was incorrectly also trimming the very beginning and end of reads that coincidentally happened to start or end with the restriction site sequence but never include restriction site-ligation contact, unintentionally shortening reads. Despite the difference being small (<1%), some reads were trimmed below minimal read length and were filtered out, while other reads were mapped against wrong genomic regions.
+
+**HPC job submission fixes.** Several optimizations in the SLURM/HPC job submission scripts were added: the `--n_jobs` parameter was not being respected, and the QOS (quality-of-service) parameter was hardcoded rather than configurable.
+
+---
+
+### 2. New features and improvements
+
+**`yap link-fastq` command.** A new command that creates standardised symbolic links to raw FASTQ files with the naming convention expected by the pipeline (`{plate}_{lane}_{read_type}.fastq.gz`). This makes it straightforward to feed data from external sources (e.g. a sequencing core, SRA) into the pipeline without renaming hundreds files by hand.
+
+**`yap link-cell-fastq` command.** A companion command for cell-level FASTQ files from external sources, similarly standardising their naming.
+
+**Lambda DNA conversion QC.** Bisulfite or enzymatic conversion efficiency is a key quality indicator for methylation sequencing. Lambda DNA (a spike-in control) conversion estimates are now computed and reported in the HISAT-3N pipeline output, giving researchers a direct measure of conversion quality per run.
+
+**GenomeBreadth QC metric.** A new per-cell quality control metric tracking what fraction of the genome is covered by at least one read. This helps identify cells with very sparse or skewed coverage.
+
+**Configurable HISAT-3N thread count.** The number of CPU threads used by the aligner is now exposed as a parameter in the configuration file, allowing users to tune the parallelism to their cluster environment (typically 8–12 threads per run give the best throughput).
+
+**Improved FASTQ file handling.** Plate names with hyphens (`-`) are now handled correctly; lane numbering is no longer limited to 8 lanes; cell distribution into mapping groups now uses a `--cells_per_group` parameter rather than fixed multiplex groups - so can be tuned depending on computing environment.
+
+**Input validation for demultiplexing.** The pipeline now checks upfront that expected FASTQ files are present, that no file symlinks are broken, and that both read 1 and read 2 are present for each sample — giving a clear error before a long run starts rather than a cryptic failure partway through.
+
+---
+
+### 3. Code cleanup and restructuring
+
+The codebase has been substantially reorganised. Previously, code was scattered across many loosely-related directories with no clear ownership — alignment logic, statistics, job submission scripts, and workflow files each lived in separate top-level folders with little logical grouping. The restructuring consolidates everything into a small number of self-contained modules with clear, descriptive names.
+
+The diagrams below show the directory structure before (as inherited from `DingWB/cemba_data`) and after the reorganisation. Nodes shown in <span style="background:#ffcccc; padding:2px 5px; border-radius:3px;">red</span> were removed; nodes in <span style="background:#fff3cd; padding:2px 5px; border-radius:3px;">yellow</span> were relocated; nodes in <span style="background:#ccffdd; padding:2px 5px; border-radius:3px;">green</span> are new.
+
+<style>
+.diagram-row { display: flex; gap: 1.5rem; align-items: flex-start; }
+.diagram-col { flex: 1; min-width: 0; overflow-x: auto; }
+.diagram-col p strong { display: block; margin-bottom: 0.4rem; }
+.diagram-col .mermaid svg { width: 100% !important; height: auto !important; min-height: 480px; }
+</style>
+
+*Legend: <span style="background:#ffcccc;padding:1px 6px;border-radius:3px;">red</span> = removed, <span style="background:#fff3cd;padding:1px 6px;border-radius:3px;">yellow</span> = relocated, <span style="background:#ccffdd;padding:1px 6px;border-radius:3px;">green</span> = new*
+
+:::{.diagram-row}
+:::{.diagram-col}
+**Before — `DingWB/cemba_data`**
+
+```{mermaid}
+%%{init: {'theme': 'default', 'themeVariables': {'fontSize': '16px'}}}%%
+graph LR
+  R["cemba_data/"]
+
+  R --> B1["bulk/"]
+  R --> D1["demultiplex/"]
+  R --> D2["dmr/"]
+  R --> F1["files/"]
+  R --> G1["gcp/"]
+  R --> H1["hisat3n/"]
+  R --> M1["mapping/"]
+  R --> S1["snm3C/"]
+  R --> Q["qsub.py + sbatch.py"]
+  R --> CLI["_yap_internal_cli_.py"]
+
+  F1 --> F2["smk/bismark/"]
+  F1 --> F3["smk/hisat3n/"]
+  F1 --> F4["default_config/"]
+
+  M1 --> M2["m3c/ + mct/"]
+  M1 --> M4["pipelines/"]
+  M1 --> M5["stats/"]
+
+  style B1 fill:#ffcccc,stroke:#cc0000
+  style D2 fill:#ffcccc,stroke:#cc0000
+  style G1 fill:#ffcccc,stroke:#cc0000
+  style S1 fill:#ffcccc,stroke:#cc0000
+  style F2 fill:#ffcccc,stroke:#cc0000
+  style CLI fill:#ffcccc,stroke:#cc0000
+  style Q fill:#fff3cd,stroke:#cc8800
+  style F3 fill:#fff3cd,stroke:#cc8800
+  style H1 fill:#fff3cd,stroke:#cc8800
+```
+:::
+:::{.diagram-col}
+**After — `mbatiuk/cemba_data`**
+
+```{mermaid}
+%%{init: {'theme': 'default', 'themeVariables': {'fontSize': '16px'}}}%%
+graph LR
+  R["cemba_data/"]
+
+  R --> C1["config/"]
+  R --> D1["demultiplex/"]
+  R --> LF["link_fastq/"]
+  R --> M1["mapping/"]
+  R --> SU["summary/"]
+
+  M1 --> MA["allc/"]
+  M1 --> MH["hpc/"]
+  M1 --> MS["smk/"]
+  M1 --> MT["stats/"]
+
+  style LF fill:#ccffdd,stroke:#007700
+  style MA fill:#ccffdd,stroke:#007700
+  style MH fill:#ccffdd,stroke:#007700
+```
+:::
+:::
+
+Notable structural changes:
+
+- The `hisat3n/` top-level module (alignment logic, statistics parser, summary code) has been merged into a unified `mapping/` module with proper submodules (`mapping/stats/`, `mapping/smk/`, `mapping/allc/`).
+- HPC job submission scripts (`qsub.py`, `sbatch.py`) that previously lived at the top level of the package are now co-located in `mapping/hpc/` where they belong.
+- Snakemake workflow files (`.smk`) previously buried under `files/smk/hisat3n/` are now directly under `mapping/smk/`, one level shallower and easier to find.
+- The new `link_fastq/` module is purpose-built and clearly named.
+- Modules with no role in the core mapping pipeline — `bulk/`, `dmr/`, `snm3C/`, `gcp/` — have been removed entirely.
+
+**Dropped the Bismark aligner pipeline.** Bismark was the standard tool for DNA methylation sequencing for many years but has been superseded by HISAT-3N, which is significantly faster. Unlike HISAT-3N, Bismark is not a self-contained aligner — it requires Bowtie 1 as an external dependency for snm3C (m3c) runs, and Bowtie 2 for other sequencing modalities, adding installation complexity and multiple versioned tools to manage. HISAT-3N also supports RNA alignment natively, which is essential for mCT runs that simultaneously profile methylation and gene expression; Bismark cannot align RNA reads, and the mCT pipeline required STAR as an additional dependency for that purpose. For chromatin contact (HiC) data, restriction-site aware alignment — where reads spanning a chromatin contact ligation site are split at the restriction site and each part aligned independently to the genome — was never implemented for Bismark. The only available approach was a fixed sliding-window scheme: an unmapped read spanning chromatin contact is divided into bins in hope some bins mostly span contiguous chromosome sequence and thus can be realigned to that genome sequence. The HISAT-3N pipeline has restriction-aware read splitting built in, producing substantially more biologically valid contacts. Retaining the Bismark pipeline alongside HISAT-3N would have created confusion about which aligner to use and added maintenance burden with no scientific benefit for the snm3C data.
+
+**Removed ALLCools dependency; necessary code ported and debugged.** ALLCools is an external package from the Ecker lab used to generate the final methylation call files (ALLC format) — the primary output of the pipeline. While widely known in the field, ALLCools carries a very large number of dependencies and has seen little active maintenance over recent years (still on Python 3.8 thus forcing old versions of dependencies), making it a fragile and heavy requirement for what is ultimately a small, well-defined piece of functionality. Rather than continue depending on it, the two functions needed by the pipeline — `bam_to_allc` and `extract_allc` — were extracted, debugged, and ported into a self-contained `mapping/allc/` submodule. The pipeline now calls these directly as Python functions within the Snakemake workflow, removing the external dependency entirely.
+
+**Dropped multiplex groups.** The original wet-lab protocol organised the 384 cells on a plate into up to 6 multiplex groups, each processed separately through the adaptase treatment and library PCR steps before pooling. In practice it is economically and analytically simpler to treat the whole plate as a single group — and a single multiplex group per plate is conceptually equivalent to no grouping at all, since it simply means the entire plate was processed together. Multiplex groups have therefore been dropped from the pipeline. Cells are now distributed into mapping groups directly via the `--cells_per_group` parameter. A legacy option is retained in the demultiplexing step for processing older data: the multiplex group prefix can be added before the plate name in FASTQ file names, used to ensure unique file names across the six groups. Then six groups FASTQ files are merged together and single-cell data is demultiplexed from the combined file.
+
+**Dropped Google Cloud Platform integration.** The upstream repository included a `yap-gcp` command set and a dedicated `gcp/` module for running the pipeline on Google Cloud Platform. This added a parallel code path for cloud-based data analysis. This fork is designed for institutional HPC clusters, and maintaining a separate cloud code path alongside the HPC path added unnecessary complexity. Furthermore, potential uploading sensitive human genomics data to overseas commercial cloud servers would risk violating EU GDPR. The entire cloud module has been removed, keeping the codebase focused on HPC deployment.
+
+**Dropped V1 barcoding.** Support for the first-generation barcode scheme has been removed. Only the current V2 barcoding is supported going forward, reducing the number of code paths that need to be maintained and tested.
+
+**Dropped the BCL-to-FASTQ conversion template.** BCL is the raw binary output format produced by Illumina sequencing instruments, which required a dedicated conversion step to produce FASTQ files. This template was rarely useful in practice — most sequencing facilities deliver FASTQ files directly — and is entirely irrelevant for new sequencing platforms such as AVITI or MGI/BGI, which produce FASTQ as their native deliverable. The `yap link-fastq` command is the appropriate replacement: it standardises FASTQ file naming using regular expressions regardless of the sequencing instrument or facility naming convention, converting file names into the format expected by the pipeline.
+
+**Unlimited lane support and flexible lane merging.** The previous pipeline limited lane numbering to a fixed maximum. This restriction has been lifted. The pipeline merges FASTQ files from separate lanes before demultiplexing as a standard step. Beyond the typical use case of merging lanes from a single sequencing run, the lane field in `yap link-fastq` can also be used to label FASTQ files from entirely separate sequencing runs of the same library — for example when a plate is sequenced a second time to reach target depth. Those files are then merged together before demultiplexing.
+
+**Dropped unused and dead code.** Numerous functions were defined in the codebase but never called from anywhere in the pipeline. These have been removed. Examples include `ReadSplitOverlapGroup`, `convert_hisat_bam_strandness`, `prepare_uid_snakefile`, and the entire `cli.py` module (which exposed functions via the `click` CLI framework but was never wired into the main entry point).
+
+---
+
+### 4. Modernisation and compatibility
+
+**Python 3.13 migration.** The pipeline has been updated from Python 3.8 to Python 3.13, the current stable release.
+
+**Snakemake 9.** The workflow engine has been upgraded to Snakemake 9, the current major version. This required updating workflow syntax and adjusting thread settings (Snakemake 9 no longer accepts fractional thread counts such as `1.5`).
+
+**Picard ≥ 3.4.0 compatibility.** Picard 3.4.0 (used for marking PCR duplicates) introduced a strict requirement for read group tags (`RG:Z:`) in BAM files, with both `ID` and `SM` fields present. A regression where BAM files were missing these tags caused Picard to abort. Fixed by piping BAM files through `samtools addreplacerg` before the duplicate-marking step so that tags are set correctly before Picard sees them.
+
+**Samtools ≥ 1.21.** Updated to take advantage of bug fixes and performance improvements in recent samtools releases.
+
+**Cutadapt ≥ 5.2.** Adapter trimming updated to the current release; removed the `-Z` flag which is now the default and caused a warning in newer versions.
+
+**Subread ≥ 2.0.2.** The `featureCounts` tool (part of the Subread package, used for RNA read quantification in mCT runs) updated to the current release.
+
+**Dependency cleanup.** Unused or outdated dependencies (including `click`, used by the now-removed `cli.py`) have been removed from the environment specification, making installation simpler.
+
+**Safe system calls.** `os.system()` calls and raw `cp` shell commands have been replaced with `subprocess.run(..., check=True)` and `shutil.copy`, which raise proper Python exceptions on failure rather than silently continuing after an error.
+
+---
+
+### 5. Documentation
+
+Documentation was substantially expanded throughout the codebase and the README. The original documentation was sparse: many configuration parameters had no description or only a brief label, leaving users to read the source code to understand what a parameter does, what values are valid, and what effect it has on the pipeline. This includes QC metrics, where the meaning of column names, their units, and their expected ranges were often not documented clearly — requiring inspection of the parsing and statistics code to reconstruct their definitions.
+
+The following areas were significantly improved:
+
+**Configuration parameters.** Parameters across all `.ini` configuration files have been given clear descriptions, including those that were previously undocumented or had only a one-word label. Where parameter meanings were ambiguous or inconsistent between pipeline modes, they have been harmonised and documented consistently.
+
+**QC metrics.** All QC metric names and their definitions have been documented in the README, with descriptions derived from the source code where no prior documentation existed. Metric names have also been standardised — ambiguous or inconsistent names for methylated cytosine contexts, mapping rates, and duplication rates have been corrected and made uniform across pipeline modes.
+
+**Command-line usage.** Usage descriptions for `yap` subcommands have been significantly expanded. Commands that existed in the pipeline but were not prominently documented are now explicitly described with usage examples in the README.
+
+**Code-level documentation.** Docstrings corrected where they described the wrong behaviour (e.g. a function documented as accepting both R1 and R2 that in fact only accepts R1). Inline comments clarified in areas where the logic was non-obvious.
+
+---
+
+## Summary
+
+The contributions address four main goals: (1) correcting bugs that caused silent incorrect results, (2) adding quality control features that give researchers better visibility into data quality, (3) reducing the size and complexity of the codebase to make it more maintainable going forward, (4) keeping the pipeline compatible with current software versions, and (5) improving documentation of the pipeline. The net result is a pipeline that is more reliable, more informative, and easier to run on a modern HPC environment.
