@@ -154,6 +154,14 @@ rule run_demultiplex:
         for fq in glob.glob(outdir+f"/{wildcards.uid}_fq_unknown/demultiplex/unknown-R*.fq.gz"):
             os.rename(fq, outdir+f"/{wildcards.uid}_fq_unknown/{os.path.basename(fq)}")
 
+        # move filtered-out cell fastqs (failed min/max thresholds) to filtered/
+        remaining = glob.glob(outdir+f"/{wildcards.uid}_fq_unknown/demultiplex/*-R*.fq.gz")
+        if remaining:
+            filtered_dir = outdir+f"/{wildcards.uid}_fq_unknown/filtered"
+            os.makedirs(filtered_dir, exist_ok=True)
+            for fq in remaining:
+                os.rename(fq, os.path.join(filtered_dir, os.path.basename(fq)))
+
         # remove now-empty demultiplex subdir
         demux_dir = outdir+f"/{wildcards.uid}_fq_unknown/demultiplex"
         if os.path.isdir(demux_dir) and not os.listdir(demux_dir):
