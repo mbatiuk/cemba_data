@@ -126,12 +126,16 @@ graph LR
 
   style B1 fill:#ffcccc,stroke:#cc0000
   style D2 fill:#ffcccc,stroke:#cc0000
+  style F1 fill:#ffcccc,stroke:#cc0000
   style G1 fill:#ffcccc,stroke:#cc0000
   style S1 fill:#ffcccc,stroke:#cc0000
   style F2 fill:#ffcccc,stroke:#cc0000
   style CLI fill:#ffcccc,stroke:#cc0000
   style Q fill:#fff3cd,stroke:#cc8800
   style F3 fill:#fff3cd,stroke:#cc8800
+  style F4 fill:#fff3cd,stroke:#cc8800
+  style M2 fill:#fff3cd,stroke:#cc8800
+  style M4 fill:#fff3cd,stroke:#cc8800
   style H1 fill:#fff3cd,stroke:#cc8800
 ```
 :::
@@ -157,6 +161,7 @@ graph LR
   style LF fill:#ccffdd,stroke:#007700
   style MA fill:#ccffdd,stroke:#007700
   style MH fill:#ccffdd,stroke:#007700
+  style SU fill:#ccffdd,stroke:#007700
 ```
 :::
 :::
@@ -167,6 +172,8 @@ Notable structural changes:
 - HPC job submission scripts (`qsub.py`, `sbatch.py`) that previously lived at the top level of the package are now co-located in `mapping/hpc/` where they belong.
 - Snakemake workflow files (`.smk`) previously buried under `files/smk/hisat3n/` are now directly under `mapping/smk/`, one level shallower and easier to find.
 - The new `link_fastq/` module is purpose-built and clearly named.
+- `summary` module consolidates previously scattered run summary scripts and prepares post-mapping aggregated QC files and python notebooks with basic modality-specific QC reports.
+- `config` module now consolidates code and templates for preparing default run config files.
 - Modules with no role in the core mapping pipeline — `bulk/`, `dmr/`, `snm3C/`, `gcp/` — have been removed entirely.
 
 **Dropped the Bismark aligner pipeline.** Bismark was the standard tool for DNA methylation sequencing for many years but has been superseded by HISAT-3N, which is significantly faster. Unlike HISAT-3N, Bismark is not a self-contained aligner — it requires Bowtie 1 as an external dependency for snm3C (m3c) runs, and Bowtie 2 for other sequencing modalities, adding installation complexity and multiple versioned tools to manage. HISAT-3N also supports RNA alignment natively, which is essential for mCT runs that simultaneously profile methylation and gene expression; Bismark cannot align RNA reads, and the mCT pipeline required STAR as an additional dependency for that purpose. For chromatin contact (HiC) data, restriction-site aware alignment — where reads spanning a chromatin contact ligation site are split at the restriction site and each part aligned independently to the genome — was never implemented for Bismark. The only available approach was a fixed sliding-window scheme: an unmapped read spanning chromatin contact is divided into bins in hope some bins mostly span contiguous chromosome sequence and thus can be realigned to that genome sequence. The HISAT-3N pipeline has restriction-aware read splitting built in, producing substantially more biologically valid contacts. Retaining the Bismark pipeline alongside HISAT-3N would have created confusion about which aligner to use and added maintenance burden with no scientific benefit for the snm3C data.
