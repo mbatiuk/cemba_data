@@ -19,7 +19,6 @@ DESCRIPTION = """
 YAP (Yet Another Pipeline) is a mapping pipeline for multiple
 snmC-seq based single-cell sequencing technologies.
 
-See documentation at https://hq-1.gitbook.io/mc/
 """
 EPILOG = ''
 
