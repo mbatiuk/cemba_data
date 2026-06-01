@@ -155,7 +155,7 @@ def squeue(qos=None):
         records.append(record)
     squeue_df = pd.DataFrame(records[1:],
                              columns=records[0]).set_index('JOBID')
-    total_job = squeue_df.shape[0]
+    all_jobs_df = squeue_df.copy()
     if qos is not None:
         try:
             # try search both QOS and PARTITION columns
@@ -167,7 +167,7 @@ def squeue(qos=None):
                 pass
         except KeyError:
             pass
-    return squeue_df, total_job
+    return squeue_df, all_jobs_df
 
 
 def make_sbatch_script_files(commands, sbatch_dir, name_prefix, qos, time_str, email, email_type, 
@@ -270,7 +270,7 @@ def sacct(jobs):
         ll = [line[col_starts[i]:col_starts[i + 1]].strip() for i in range(len(col_starts) - 1)]
         data.append(ll)
     sacct_data = pd.DataFrame(data, columns=columns).set_index('JobID')
-    sacct_data = sacct_data[~sacct_data.index.str.endswith('bat+')].copy()
+    sacct_data = sacct_data[~sacct_data.index.str.contains(r'\.', na=False)].copy()
     sacct_data['Success'] = sacct_data['ExitCode'] == '0:0'
     return sacct_data
 
@@ -349,7 +349,7 @@ def sbatch_submitter(project_name, command_file_path, working_dir, time_str, qos
                 break
             # squeue and update running job status
             try:
-                squeue_df, total_job = squeue(qos=qos)
+                squeue_df_filtered, squeue_df = squeue(qos=qos)
                 squeue_fail = 0
             except Exception as e:
                 error_path = sbatch_dir / 'squeue_text.txt'
@@ -363,7 +363,7 @@ def sbatch_submitter(project_name, command_file_path, working_dir, time_str, qos
                 time.sleep(150)
                 continue
             # queue limit and total job limit both apply
-            remaining_slots = max_jobs - squeue_df.shape[0]
+            remaining_slots = max_jobs - squeue_df_filtered.shape[0]
             # the max_jobs is apply to user level, not to the current submitter level
             if remaining_slots > 0:
                 # things are getting done, weak up
@@ -374,9 +374,10 @@ def sbatch_submitter(project_name, command_file_path, working_dir, time_str, qos
                 for job_id in running_job_id_set:
                     if job_id not in squeue_df.index:
                         # running job finished
+                        finished_job_id_set.add(job_id)
                         if judge_job_success(job_id):
                             # job succeed
-                            finished_job_id_set.add(job_id)
+                            pass
                         else:
                             # job failed
                             script_path = job_id_to_script_path[job_id]
@@ -386,8 +387,6 @@ def sbatch_submitter(project_name, command_file_path, working_dir, time_str, qos
                                       f'{script_path_to_tried_times[script_path]}/{retry}.')
                                 queue_job_path_list.append(script_path)
                             else:
-                                # add the last job_id into finished
-                                finished_job_id_set.add(job_id)
                                 print(f'{script_path} failed after {retry + 1} attempts.')
                         # status will be judged in the end
                     else:
@@ -440,7 +439,9 @@ def sbatch_submitter(project_name, command_file_path, working_dir, time_str, qos
         print('The maximum job elapsed:', times.max())
 
         # print success
-        print(f"{sacct_df['Success'].sum()} / {sacct_df.shape[0]} succeeded")
+        # grouped by script path, check if any job success
+        script_success = sacct_df.groupby('ScriptPath')['Success'].any()
+        print(f"{script_success.sum()} / {script_success.shape[0]} scripts succeeded")
 
     # delete flag
     subprocess.run(shlex.split(f'rm -f {flag_path}'), check=True)

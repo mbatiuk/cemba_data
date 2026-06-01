@@ -2,7 +2,7 @@
 #
 #
 #   Copy/edit this script as desired.  Launch script with sbatch on a login node.
-# 
+#
 #
 #
 #
@@ -23,6 +23,7 @@
 {email_type_str}
 
 
+set -e
 # Some information
 
 echo
@@ -47,8 +48,7 @@ export OMP_NUM_THREADS=1
 # Actual command
 
 {command}
-
-
+exit_code=$?
 
 
 # Deactivate environment
@@ -61,3 +61,5 @@ conda deactivate
 echo
 echo STOPPING AT `date`
 echo
+
+exit $exit_code
