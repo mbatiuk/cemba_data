@@ -353,7 +353,8 @@ def m3c_config_str(config):
         'num_downstr_bases': 2,
         'compress_level': 5,
         'min_gap': 2500,
-        'hisat3n_threads': 11
+        'hisat3n_threads': 11,
+        'optical_duplicate_pixel_distance': 2500,
     }
 
     str_parameters = {
@@ -388,7 +389,8 @@ def mc_config_str(config):
         'num_upstr_bases': 0,
         'num_downstr_bases': 2,
         'compress_level': 5,
-        'hisat3n_threads': 11
+        'hisat3n_threads': 11,
+        'optical_duplicate_pixel_distance': 2500,
     }
 
     str_parameters = {
@@ -425,7 +427,8 @@ def mct_config_str(config):
         'compress_level': 5,
         'dna_cov_min_threshold': 3,
         'rna_cov_min_threshold': 3,
-        'hisat3n_threads': 11
+        'hisat3n_threads': 11,
+        'optical_duplicate_pixel_distance': 2500,
     }
 
     float_parameters = {

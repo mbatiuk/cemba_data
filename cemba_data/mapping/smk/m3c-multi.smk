@@ -92,7 +92,7 @@ rule dedup_multi_bam:
         2
     shell:
         """
-        picard MarkDuplicates -I {input} -O {output.bam} -M {output.stats} -REMOVE_DUPLICATES true -TMP_DIR bam/temp/
+        picard MarkDuplicates -I {input} -O {output.bam} -M {output.stats} -REMOVE_DUPLICATES true -TMP_DIR bam/temp/ --OPTICAL_DUPLICATE_PIXEL_DISTANCE {config[optical_duplicate_pixel_distance]} --ADD_PG_TAG_TO_READS false
         """
 
 # generate ALLC
