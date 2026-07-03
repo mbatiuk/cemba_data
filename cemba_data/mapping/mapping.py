@@ -342,7 +342,8 @@ def m3c_config_str(config):
     """Change the dtype of parameters and make a appropriate string"""
     int_parameters = {
         'overlap': 6,
-        'r1_left_cut': 10,
+        'homopolymer_overlap': 30,
+        'r1_left_cut': 9,
         'r1_right_cut': 10,
         'r2_left_cut': 10,
         'r2_right_cut': 10,
@@ -359,8 +360,13 @@ def m3c_config_str(config):
 
     str_parameters = {
         'mode': 'm3c',
-        'r1_adapter': 'AGATCGGAAGAGCACACGTCTGAAC',
-        'r2_adapter': 'AGATCGGAAGAGCGTCGTGTAGGGA',
+        'TruSeq2': 'AGATCGGAAGAGCACACGTCTGAAC',
+        'TruSeq1_rc': 'AGATCGGAAGAGCGTCGTGTAGGGA',
+        'TruSeq1_rc_short': 'AGATCGGAAGAGCGTCGT',
+        'TruSeq1': 'TTCCCTACACGACGCTCTTCCGATCT',
+        'PolyG': 'G{30}',
+        'PolyA': 'A{30}',
+        'PolyT': 'T{30}',
         'hisat3n_dna_reference': 'required',
         'hisat3n_repeat_index_type': 'no-repeat',
         'reference_fasta': 'required',
@@ -379,7 +385,8 @@ def mc_config_str(config):
     """Change the dtype of parameters and make a appropriate string"""
     int_parameters = {
         'overlap': 6,
-        'r1_left_cut': 10,
+        'homopolymer_overlap': 30,
+        'r1_left_cut': 9,
         'r1_right_cut': 10,
         'r2_left_cut': 10,
         'r2_right_cut': 10,
@@ -395,8 +402,13 @@ def mc_config_str(config):
 
     str_parameters = {
         'mode': 'mc',
-        'r1_adapter': 'AGATCGGAAGAGCACACGTCTGAAC',
-        'r2_adapter': 'AGATCGGAAGAGCGTCGTGTAGGGA',
+        'TruSeq2': 'AGATCGGAAGAGCACACGTCTGAAC',
+        'TruSeq1_rc': 'AGATCGGAAGAGCGTCGTGTAGGGA',
+        'TruSeq1_rc_short': 'AGATCGGAAGAGCGTCGT',
+        'TruSeq1': 'TTCCCTACACGACGCTCTTCCGATCT',
+        'PolyG': 'G{30}',
+        'PolyA': 'A{30}',
+        'PolyT': 'T{30}',
         'hisat3n_dna_reference': 'required',
         'hisat3n_repeat_index_type': 'no-repeat',
         'reference_fasta': 'required',

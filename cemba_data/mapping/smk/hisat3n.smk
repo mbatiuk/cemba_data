@@ -42,13 +42,42 @@ rule trim:
         1
     shell:
         """
-        cutadapt -a R1Adapter={config[r1_adapter]} \
--A R2Adapter={config[r2_adapter]} --report=minimal \
--O {config[overlap]} -q {config[quality_threshold]} -u {config[r1_left_cut]} -u -{config[r1_right_cut]} \
+        # Pass 1: adapter trimming
+        cutadapt \
+-g TruSeq1={config[TruSeq1]} \
+-a TruSeq2={config[TruSeq2]} \
+-a TruSeq1_rc={config[TruSeq1_rc]} \
+-a TruSeq1_rc_short={config[TruSeq1_rc_short]} \
+-G TruSeq1={config[TruSeq1]} \
+-A TruSeq1_rc={config[TruSeq1_rc]} \
+-A TruSeq1_rc_short={config[TruSeq1_rc_short]} \
+--nextseq-trim={config[quality_threshold]} --report=minimal \
+--times 3 -O {config[overlap]} \
+-u {config[r1_left_cut]} -u -{config[r1_right_cut]} \
 -U {config[r2_left_cut]} -U -{config[r2_right_cut]} \
+-q {config[quality_threshold]} \
 -m {config[min_read_length]}:{config[min_read_length]} \
---pair-filter 'both' -o {output.R1} -p {output.R2} \
+--pair-filter 'both' \
+-o {output.R1}.pass1 -p {output.R2}.pass1 \
 {input.R1} {input.R2} > {output.stats}
+
+        # Pass 2: homopolymer trimming
+        cutadapt \
+-a PolyG={config[PolyG]} \
+-a PolyA={config[PolyA]} \
+-a PolyT={config[PolyT]} \
+-g PolyG={config[PolyG]} \
+-A PolyG={config[PolyG]} \
+-A PolyA={config[PolyA]} \
+-A PolyT={config[PolyT]} \
+-G PolyG={config[PolyG]} \
+--report=minimal --times 2 -O {config[homopolymer_overlap]} \
+-m {config[min_read_length]}:{config[min_read_length]} \
+--pair-filter 'both' \
+-o {output.R1} -p {output.R2} \
+{output.R1}.pass1 {output.R2}.pass1 >> {output.stats}
+
+        rm -f {output.R1}.pass1 {output.R2}.pass1
         """
 
 

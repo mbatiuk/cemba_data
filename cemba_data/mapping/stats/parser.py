@@ -4,6 +4,7 @@ Each cell_parser function takes a path from single cell and return a series name
 """
 import pathlib
 import os
+import io
 import numpy as np
 import pandas as pd
 import pysam
@@ -187,9 +188,46 @@ def cell_parser_picard_dedup_stat(stat_path):
 
 def cell_parser_cutadapt_trim_stats(path):
 	path = pathlib.Path(path)
-
 	cell_id = path.name.split('.')[0]
-	cell_records = pd.read_csv(path, sep='\t').T.squeeze()
+
+	with open(path) as f:
+		content = f.read()
+
+	# Split on 'status' header — each cutadapt pass starts with 'status\tin_reads\t...'
+	# Single-pass (mct) produces one block; two-pass (mc/m3c) produces two.
+	blocks = content.split('status\tin_reads')
+	header = 'status\tin_reads'
+
+	pass_dfs = []
+	for block in blocks[1:]:  # blocks[0] is empty (before first header)
+		df = pd.read_csv(io.StringIO(header + block), sep='\t')
+		pass_dfs.append(df)
+
+	if len(pass_dfs) == 1:
+		# Single-pass (mct compatibility)
+		cell_records = pass_dfs[0].T.squeeze()
+	elif len(pass_dfs) == 2:
+		# Two-pass (mc/m3c): merge pass 1 and pass 2 stats
+		p1 = pass_dfs[0].iloc[0]
+		p2 = pass_dfs[1].iloc[0]
+		cell_records = pd.Series({
+			'status': p2['status'],
+			'in_reads': p1['in_reads'],                              # original input
+			'in_bp': p1['in_bp'],                                    # original input bp
+			'too_short': p1['too_short'] + p2['too_short'],          # total reads lost
+			'too_long': p1['too_long'] + p2['too_long'],
+			'too_many_n': p1['too_many_n'] + p2['too_many_n'],
+			'out_reads': p2['out_reads'],                            # final output reads
+			'w/adapters': p1['w/adapters'] + p2['w/adapters'],       # total adapter matches R1
+			'qualtrim_bp': p1['qualtrim_bp'] + p2['qualtrim_bp'],    # total quality trimmed bases in R1
+			'out_bp': p2['out_bp'],                                  # final output R1 bp
+			'w/adapters2': p1['w/adapters2'] + p2['w/adapters2'],    # total adapter matches R2
+			'qualtrim2_bp': p1['qualtrim2_bp'] + p2['qualtrim2_bp'], # total quality trimmed bases in R2
+			'out2_bp': p2['out2_bp'],                                # final output R2 bp
+		})
+	else:
+		raise ValueError(f'Unexpected number of pass blocks ({len(pass_dfs)}) in {path}')
+
 	cell_records.name = cell_id
 	return cell_records
 
