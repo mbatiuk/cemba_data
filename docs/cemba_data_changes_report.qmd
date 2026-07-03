@@ -1,7 +1,7 @@
 ---
 title: "Summary of cemba_data mapping pipeline changes"
 subtitle: "Repository: [github.com/mbatiuk/cemba_data](https://github.com/mbatiuk/cemba_data) · forked from Ecker lab [github.com/DingWB/cemba_data](https://github.com/DingWB/cemba_data)"
-date: May 29, 2026
+date: July 3, 2026
 format:
   html:
     toc: true
@@ -30,10 +30,10 @@ All changes described in this report are relative to the upstream public fork (`
 
 | Metric | Value |
 |---|---|
-| Total commits | ~130 |
-| Files changed | ~159 |
-| Lines added | ~4,800 |
-| Lines removed | ~21,200 (legacy cleanup) |
+| Total commits | ~122 |
+| Files changed | ~167 |
+| Lines added | ~5,400 |
+| Lines removed | ~22,000 (legacy cleanup) |
 
 The large number of lines removed reflects deliberate removal of outdated, unused, or out-of-scope code — a form of maintenance that reduces complexity and the risk of future bugs. Of the ~159 files, a portion represent files relocated to new module directories as part of the code restructuring rather than entirely new files; the content of those files was also modified, not merely moved.
 
@@ -64,6 +64,10 @@ A substantial portion of the work involved identifying and fixing bugs that had 
 ---
 
 ### 2. New features and improvements
+
+**Allow 1 mismatch during cell-level demultiplexing.** The 384 random cell barcodes (8 bp indexes) used for single-cell identification were designed with a minimum Hamming distance of 3 between any pair. The demultiplexing step previously required an exact match (`cutadapt -e 0.01`, effectively 0 errors in 8 bp). This has been relaxed to allow 1 mismatch (`cutadapt -e 0.13`, which allows 1 error in 8 bp). Since the minimum pairwise Hamming distance is 3, a single sequencing error in a barcode cannot cause one cell to be mis-assigned to another — the erroneous read still matches its correct barcode more closely than any other. This recovers a significant number of reads that were previously discarded as unmatched.
+
+**Improved read trimming for mc and m3c.** The read trimming step now runs two sequential cutadapt passes. Pass 1 trims Illumina adapters with at least 6 bases overlap `-O 6`, adding `--nextseq-trim 20` alongside the existing `-q 20` to remove NovaSeq dark-cycle polyG (high-quality G bases called from no-signal cycles that standard quality trimming cannot detect). The 5′ adapter `TruSeq1` is now explicitly trimmed, and `TruSeq1_rc_short` (18 bp prefix of `TruSeq1_rc`) catches adapter with absent tail. Adapter naming follows the convention of pipeline here: https://github.com/chooliu/snm3Cseq_Pipeline. Pass 2 trims 30 bp+ homopolymers (polyG/polyA/polyT) with 30 bases overlap `-O 30`, a threshold chosen so that real genomic homopolymer stretches in bisulfite-converted DNA are left intact. The two passes are necessary because cutadapt has a single global `-O` parameter; stats from both passes are concatenated and merged by the parser.
 
 **`yap link-fastq` command.** A new command that creates standardised symbolic links to raw FASTQ files with the naming convention expected by the pipeline (`{plate}_{lane}_{read_type}.fastq.gz`). This makes it straightforward to feed data from external sources (e.g. a sequencing core, SRA) into the pipeline without renaming hundreds files by hand.
 

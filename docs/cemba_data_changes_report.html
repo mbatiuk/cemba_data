@@ -2,11 +2,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.37">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-05-29">
+<meta name="dcterms.date" content="2026-07-03">
 
 <title>Summary of cemba_data mapping pipeline changes</title>
 <style>
@@ -5305,7 +5305,7 @@ z-index: 1000;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">May 29, 2026</p>
+      <p class="date">July 3, 2026</p>
     </div>
   </div>
   
@@ -5342,19 +5342,19 @@ z-index: 1000;
 <tbody>
 <tr class="odd">
 <td>Total commits</td>
-<td>~130</td>
+<td>~122</td>
 </tr>
 <tr class="even">
 <td>Files changed</td>
-<td>~159</td>
+<td>~167</td>
 </tr>
 <tr class="odd">
 <td>Lines added</td>
-<td>~4,800</td>
+<td>~5,400</td>
 </tr>
 <tr class="even">
 <td>Lines removed</td>
-<td>~21,200 (legacy cleanup)</td>
+<td>~22,000 (legacy cleanup)</td>
 </tr>
 </tbody>
 </table>
@@ -5378,6 +5378,8 @@ z-index: 1000;
 </section>
 <section id="new-features-and-improvements" class="level3">
 <h3 class="anchored" data-anchor-id="new-features-and-improvements">2. New features and improvements</h3>
+<p><strong>Allow 1 mismatch during cell-level demultiplexing.</strong> The 384 random cell barcodes (8 bp indexes) used for single-cell identification were designed with a minimum Hamming distance of 3 between any pair. The demultiplexing step previously required an exact match (<code>cutadapt -e 0.01</code>, effectively 0 errors in 8 bp). This has been relaxed to allow 1 mismatch (<code>cutadapt -e 0.13</code>, which allows 1 error in 8 bp). Since the minimum pairwise Hamming distance is 3, a single sequencing error in a barcode cannot cause one cell to be mis-assigned to another — the erroneous read still matches its correct barcode more closely than any other. This recovers a significant number of reads that were previously discarded as unmatched.</p>
+<p><strong>Improved read trimming for mc and m3c.</strong> The read trimming step now runs two sequential cutadapt passes. Pass 1 trims Illumina adapters with at least 6 bases overlap <code>-O 6</code>, adding <code>--nextseq-trim 20</code> alongside the existing <code>-q 20</code> to remove NovaSeq dark-cycle polyG (high-quality G bases called from no-signal cycles that standard quality trimming cannot detect). The 5′ adapter <code>TruSeq1</code> is now explicitly trimmed, and <code>TruSeq1_rc_short</code> (18 bp prefix of <code>TruSeq1_rc</code>) catches adapter with absent tail. Adapter naming follows the convention of pipeline here: https://github.com/chooliu/snm3Cseq_Pipeline. Pass 2 trims 30 bp+ homopolymers (polyG/polyA/polyT) with 30 bases overlap <code>-O 30</code>, a threshold chosen so that real genomic homopolymer stretches in bisulfite-converted DNA are left intact. The two passes are necessary because cutadapt has a single global <code>-O</code> parameter; stats from both passes are concatenated and merged by the parser.</p>
 <p><strong><code>yap link-fastq</code> command.</strong> A new command that creates standardised symbolic links to raw FASTQ files with the naming convention expected by the pipeline (<code>{plate}_{lane}_{read_type}.fastq.gz</code>). This makes it straightforward to feed data from external sources (e.g. a sequencing core, SRA) into the pipeline without renaming hundreds files by hand.</p>
 <p><strong><code>yap link-cell-fastq</code> command.</strong> A companion command for cell-level FASTQ files from external sources, similarly standardising their naming.</p>
 <p><strong>Lambda DNA conversion QC.</strong> Bisulfite or enzymatic conversion efficiency is a key quality indicator for methylation sequencing. Lambda DNA (a spike-in control) conversion estimates are now computed and reported in the HISAT-3N pipeline output, giving researchers a direct measure of conversion quality per run.</p>
